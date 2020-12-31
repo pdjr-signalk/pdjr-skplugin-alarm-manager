@@ -1,0 +1,34 @@
+{
+  "name": "signalk-alarm",
+  "version": "1.0.0",
+  "description": "Inject alarm notification into Signal K",
+  "main": "index.js",
+  "signalk-plugin-enabled-by-default": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/preeve9534/signalk-alarm.git"
+  },
+  "keywords": [
+    "signalk-node-server-plugin",
+    "signalk",
+    "alarm",
+    "notifications",
+    "plugin"
+  ],
+  "author": "Paul Reeve <preeve@pdjr.eu>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/preeve9534/signalk-alarm/issues"
+  },
+  "homepage": "https://github.com/preeve9534/signalk-alarm#readme",
+  "dependencies": {
+    "sprintf-js": "^1.1.2"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "devDependencies": {}
+}

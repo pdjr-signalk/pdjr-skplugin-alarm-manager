@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "paths": {
+      "type": "array",
+      "title": "Data values that should be monitored",
+      "items": { "type": "string" }
+    },
+    "output1": { "type": "string" },
+    "output2": { "type": "string" }
+    }
+  }
+}
