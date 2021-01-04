@@ -1,2 +1,5 @@
 # signalk-alarm
-Alarm plugin with web-page support
+
+Alarm plugin with webapp support.
+
+__signalk-alarm__ 

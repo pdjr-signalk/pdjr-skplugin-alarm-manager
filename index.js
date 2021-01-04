@@ -28,7 +28,7 @@ const PLUGIN_DIGEST_KEY = "notifications.plugins.alarm.digest";
 module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
-  var alarmZones = {};
+  var notificationDigest = {};
 
   plugin.id = 'alarm';
   plugin.name = 'Alarm notification generator';
@@ -52,32 +52,35 @@ module.exports = function (app) {
       if (v.message == META_PLUGIN_STATUS_NOTIFICATION_KEY_READY_VALUE) {
         log.N("alarm system started (monitoring %d key%s)", options.paths.length, (options.paths.length == 1)?"":"s");
         options.paths.forEach(path => {
-          var stream = app.streambundle.getSelfStream(path);
-          unsubscribes.push(stream.onValue(v => {
-            if (!alarmZones[path]) {
-              var meta = app.getSelfPath(path + ".meta");
-              if (meta) {
-                var zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
-                zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
-                alarmZones[path] = { zones: zones, lastNotification: null };
-              }
-            } else {
-              if (alarmZones[path]) {
-                var notificationValue = alarmCheck(v, alarmZones[path].zones);
-                var ncv = (notificationValue)?notificationValue.state:notificationValue;
-                var lcv = (alarmZones[path].lastNotification)?alarmZones[path].lastNotification.state:null;
-                if (ncv != lcv) {
-                  alarmZones[path].lastNotification = notificationValue;
-                  var delta = new Delta(app, plugin.id);
-                  delta.addValue("notifications." + path, notificationValue);
-                  var activeNotifications = Object.keys(alarmZones).reduce((a,k) => { if (alarmZones[k].lastNotification) a.push(alarmZones[k].lastNotification); return(a); }, []);
-                  delta.addValue(PLUGIN_DIGEST_KEY, activeNotifications);
-                  delta.commit();
-                  if (options.output1) app.putSelfPath(options.output1 + ".state", (activeNotifications.length)?1:0, (d) => app.debug("put response: %s", d.message));
+          var meta = app.getSelfPath(path + ".meta");
+          if ((meta) && (meta.zones) && (meta.zones.length)) {
+            let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
+            zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
+            var stream = app.streambundle.getSelfStream(path);
+            var updated = false;
+            unsubscribes.push(stream.skipDuplicates().onValue(v => {
+              var notification = alarmCheck(v, zones);
+              if (notification) { // Value is alarming...
+                if ((!notificationDigest[path]) || (notificationDigest[path].state != notification.state)) {
+                  notificationDigest[path] = notification;
+                  (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
+                  updated = true;
+                }
+                if ((updated) && (options.outputs)) {
+                  var alarmPath = options.outputs.reduce((a,o) => { return((o.triggerstates.includes(notification.state))?o.triggerpath:a); }, null);
+                  if (alarmPath) app.putSelfPath(alarmPath + ".state", 1);
+                }
+              } else {
+                if (notificationDigest[path]) {
+                  delete notificationDigest[path];
+                  updated = true;
                 }
               }
-            }
-          }));
+              if (updated) {
+                (new Delta(app, plugin.id)).addValue(PLUGIN_DIGEST_KEY, Object.keys(notificationDigest).map(key => notificationDigest[key])).commit().clear();
+              }
+            }));
+          }
         });
       }
     }));
@@ -90,14 +93,12 @@ module.exports = function (app) {
 
   function alarmCheck(value, zones) {
     var notificationValue = null;
-    if (zones) {
-      zones.forEach(zone => {
-        if (((!zone.lower) || (value >= zone.lower)) && ((!zone.upper) || (value <= zone.upper))) {
-          var now = Date.now();
-          notificationValue = { "state": zone.state, "method": zone.method, "message": zone.message, "id": now };
-        }
-      });
-    }
+    zones.forEach(zone => {
+      if (((!zone.lower) || (value >= zone.lower)) && ((!zone.upper) || (value <= zone.upper))) {
+        var now = Date.now();
+        notificationValue = { "state": zone.state, "method": zone.method, "message": zone.message, "id": now };
+      }
+    });
     return(notificationValue);
   }
 

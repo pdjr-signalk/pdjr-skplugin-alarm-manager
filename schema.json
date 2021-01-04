@@ -6,8 +6,18 @@
       "title": "Data values that should be monitored",
       "items": { "type": "string" }
     },
-    "output1": { "type": "string" },
-    "output2": { "type": "string" }
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "switchpath": { "type": "string" },
+          "triggerstates": {
+            "type": "array",
+            "items": { "type": "string", "enum": [ "warn", "alert", "alarm", "emergency" ] }
+          }
+        }
+      }
     }
   }
 }
