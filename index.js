@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+const bacon = require("baconjs");
 const Log = require("./lib/signalk-liblog/Log.js");
 const Schema = require("./lib/signalk-libschema/Schema.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
@@ -21,8 +22,6 @@ const Delta = require("./lib/signalk-libdelta/Delta.js");
 const PLUGIN_SCHEMA_FILE = __dirname + "/schema.json";
 const PLUGIN_UISCHEMA_FILE = __dirname + "/uischema.json";
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
-const META_PLUGIN_STATUS_NOTIFICATION_KEY = "notifications.plugins.meta.status";
-const META_PLUGIN_STATUS_NOTIFICATION_KEY_READY_VALUE = "complete";
 const PLUGIN_DIGEST_KEY = "notifications.plugins.alarm.digest";
 
 module.exports = function (app) {
@@ -47,9 +46,9 @@ module.exports = function (app) {
   }
 
   plugin.start = function(options) {
-    var stream = app.streambundle.getSelfStream(META_PLUGIN_STATUS_NOTIFICATION_KEY);
+    var stream = (options.starton)?app.streambundle.getSelfStream(options.starton):bacon.constant(1);
     unsubscribes.push(stream.onValue(v => {
-      if (v.message == META_PLUGIN_STATUS_NOTIFICATION_KEY_READY_VALUE) {
+      if (v) {
         log.N("alarm system started (monitoring %d key%s)", options.paths.length, (options.paths.length == 1)?"":"s");
         options.paths.forEach(path => {
           var meta = app.getSelfPath(path + ".meta");
@@ -63,6 +62,7 @@ module.exports = function (app) {
               if (notification) { // Value is alarming...
                 if ((!notificationDigest[path]) || (notificationDigest[path].state != notification.state)) {
                   notificationDigest[path] = notification;
+                  log.N("issuing notification on '%s'", path);
                   (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
                   updated = true;
                 }
@@ -72,7 +72,9 @@ module.exports = function (app) {
                 }
               } else {
                 if (notificationDigest[path]) {
+                  log.N("cancelling notification on '%s'", path);
                   delete notificationDigest[path];
+                  (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
                   updated = true;
                 }
               }

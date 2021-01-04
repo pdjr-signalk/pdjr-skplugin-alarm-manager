@@ -6,6 +6,10 @@
       "title": "Data values that should be monitored",
       "items": { "type": "string" }
     },
+    "startton": {
+      "description": "Key which must true before the plugin will start",
+      "type": "string"
+    },
     "outputs": {
       "type": "array",
       "items": {
