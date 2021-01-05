@@ -30,7 +30,7 @@ module.exports = function (app) {
   var notificationDigest = {};
 
   plugin.id = 'alarm';
-  plugin.name = 'Alarm notification generator';
+  plugin.name = 'Alarm notifier';
   plugin.description = 'Inject alarm notifications into Signal K';
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
@@ -49,7 +49,7 @@ module.exports = function (app) {
     var stream = (options.starton)?app.streambundle.getSelfStream(options.starton):bacon.constant(1);
     unsubscribes.push(stream.onValue(v => {
       if (v) {
-        var paths = getAlarmPaths(app, options.ignorepaths || [ "notifications." ]);
+        var paths = getAvailableAlarmPaths(app, options.ignorepaths || [ "notifications." ]);
         log.N("alarm system started (monitoring %d key%s)", paths.length, (paths.length == 1)?"":"s");
         paths.forEach(path => {
           var meta = app.getSelfPath(path + ".meta");
@@ -58,7 +58,7 @@ module.exports = function (app) {
           var stream = app.streambundle.getSelfStream(path);
           var updated = false;
           unsubscribes.push(stream.skipDuplicates().onValue(v => {
-            var notification = alarmCheck(v, zones);
+            var notification = getAlarmNotification(v, zones);
             if (notification) { // Value is alarming...
               if ((!notificationDigest[path]) || (notificationDigest[path].state != notification.state)) {
                 notificationDigest[path] = notification;
@@ -92,7 +92,12 @@ module.exports = function (app) {
     var unsubscribes = [];
   }
 
-  function alarmCheck(value, zones) {
+  /********************************************************************
+   * Returns a well formed notification object or null dependent upon
+   * whether or not <value> is captured by a rule in the <zones> array.
+   */
+
+  function getAlarmNotification(value, zones) {
     var notificationValue = null;
     zones.forEach(zone => {
       if (((!zone.lower) || (value >= zone.lower)) && ((!zone.upper) || (value <= zone.upper))) {
@@ -103,7 +108,15 @@ module.exports = function (app) {
     return(notificationValue);
   }
 
-  function getAlarmPaths(app, ignore=[]) {
+  /********************************************************************
+   * Returns a list of terminal paths recovered from <app> which have
+   * meta.zones properties and are as a consequence able to support
+   * alarm operation. The list of all available paths is initially
+   * filtered to remove those paths with prefixes in the <ignore>
+   * array.
+   */
+
+  function getAvailableAlarmPaths(app, ignore=[]) {
     var retval = app.streambundle.getAvailablePaths()
       .filter(p => !ignore.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))
       .filter(p => {
@@ -113,6 +126,5 @@ module.exports = function (app) {
     return(retval);
   }
    
-
   return(plugin);
 }
