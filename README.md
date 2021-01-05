@@ -46,7 +46,7 @@ Signal K tree to be excluded wholesale from alarm processing.
 
 Values appearing on an alarm *key* are checked against the associated
 meta zones configuration and if the value falls within a defined zone
-the __signalk-alarm__ will issue a notification on the path
+then __signalk-alarm__ will issue a notification on the path
 "notifications.*key*" using the rules defined in the meta.
 
 __signalk-alarm__ can also be used to maintain values on output
