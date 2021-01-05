@@ -6,38 +6,55 @@ __signalk-alarm__ implements a centralised mechanism for issuing alarm
 notifications contingent upon the alarm configuration properties
 embedded in the meta values associated with monitored keys.
 
-The design of the plugin acknowledges
-[this discussion](https://github.com/SignalK/specification/blob/master/gitbook-docs/data_model_metadata.md).
-in the
-[Signal K Specification](https://github.com/SignalK/specification).
+The design of the plugin acknowledges the Signal K specification
+discussions on 
+[Metadata](https://github.com/SignalK/specification/blob/master/gitbook-docs/data_model_metadata.md)
+and
+[Alarm, Alert, and Notification Handling](https://github.com/SignalK/specification/blob/master/gitbook-docs/notifications.md).
 
-As well as issuing alarm notification under the "notifications." tree,
-__signalk-alarm__ maintains a digest of active alarm notifications at
-"notifications.plugins.alarm.digest".
+__signalk-alarm__ generates three types of outputs in response to an
+alarm condition.
+
+Firstly, it reponds to the requirements of the Signal K specification
+by issuing notifications: thus, an alarm triggered by a value on *key*
+will raise a notification on 'notifications.*key*'.
+
+Secondly, the plugin maintains a digest of active alarm notifications
+at 'notifications.plugins.alarm.digest'.
 The digest is simply an array of all currently active notifications and
-provides a convenient data set for use by other plugins and webapps.
-A simple [alarm widget](https://github.com/preeve9534/signalk-alarm-widget)
-illustrates how the digest might be used in a Signal K webapp.
+provides a convenient data set for use by software annunciators or
+other alarm consumers.
+
+Thirdly, the plugin may operate one or more user-defined switch outputs
+in response to the system's alarm state.
+This allows, for example, the host system to operate arbitrary types of
+physical annunciator.
+
+[signalk-alarm widget](https://github.com/preeve9534/signalk-alarm-widget)
+is a simple web component that can be included in any webapp to provide
+a front-end annunciator for __signalk-alarm__.
 
 ## Operating principle
 
-The keys which __signalk-alarm__ monitors are defined in the plugin
-configuration file __paths__ property as a collection of terminal
-paths.
-In future releases it may be possible to specify alarm keys using
-partial paths and or regular expressions.
+The keys which __signalk-alarm__ monitors are automatically derived
+from the Signal K tree by examination of those paths which are
+configured through their meta properties to support alarm function.
+
+The __ignorepaths__ configuration property allows sections of the
+Signal K tree to be excluded wholesale from alarm processing.
 
 Values appearing on an alarm *key* are checked against the associated
 meta zones configuration and if the value falls within a defined zone
 the __signalk-alarm__ will issue a notification on the path
 "notifications.*key*" using the rules defined in the meta.
 
-__signalk-alarm__ can also be used to update values on some output
+__signalk-alarm__ can also be used to maintain values on output
 channels defined under the __outputs__ configuration property.
 This feature is intended to allow the plugin to operate one or more
-output relays in response to the presence or absence of active alarm
-notifications: this can be used to trigger external annunciators
-in response to internal alarm states.
+output switches or relays in response to the presence or absence of
+active alarm notifications with particular state property values.
+This behaviour can be used to trigger external annunciators in response
+to internal alarm states.
 
 The correct operation of __signalk-alarm__ depends upon the presence
 of meta information at the time a trigger key is processed and for a
@@ -56,23 +73,11 @@ True-ish means either numeric 1 or the presence of a notification.
   "enableLogging": false,
   "enableDebug": false,
   "configuration": {
-    "paths": [
-      "tanks.freshWater.1.currentLevel",
-      "tanks.freshWater.2.currentLevel",
-      "tanks.fuel.3.currentLevel",
-      "tanks.fuel.4.currentLevel",
-      "tanks.wasteWater.0.currentLevel"
-    ],
+    "ignorepaths": [ "design.", "electrical.", "environment.", "network.", "notifications.", "sensors." ],
     "starton": "notifications.plugins.meta.status",
     "outputs": [
-      {
-        "switchpath": "electrical.switches.bank.usb0.1",
-        "triggerstates": [ "warn", "alert" ]
-      },
-      {
-        "switchpath": "electrical.switches.bank.usb0.1",
-        "triggerstates": [ "warn", "alert" ]
-      }
+      { "switchpath": "electrical.switches.bank.usb0.1", "triggerstates": [ "warn", "alert" ] },
+      { "switchpath": "electrical.switches.bank.usb0.2", "triggerstates": [ "alarm", "emergency" ] }
     ]
   }
 }

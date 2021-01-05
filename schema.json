@@ -1,16 +1,19 @@
 {
   "type": "object",
   "properties": {
-    "paths": {
+    "ignorepaths": {
       "type": "array",
-      "title": "Data values that should be monitored",
+      "description": "Paths that that should be ignored by the alarm system",
+      "title": "Ignore keys under these paths", 
       "items": { "type": "string" }
     },
     "startton": {
       "description": "Key which must true before the plugin will start",
+      "title": "Do not start processing until this key returns true",
       "type": "string"
     },
     "outputs": {
+      "description": "Switch paths that should be set when active alarms with the defines states are present",
       "type": "array",
       "items": {
         "type": "object",

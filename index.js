@@ -49,40 +49,39 @@ module.exports = function (app) {
     var stream = (options.starton)?app.streambundle.getSelfStream(options.starton):bacon.constant(1);
     unsubscribes.push(stream.onValue(v => {
       if (v) {
-        log.N("alarm system started (monitoring %d key%s)", options.paths.length, (options.paths.length == 1)?"":"s");
-        options.paths.forEach(path => {
+        var paths = getAlarmPaths(app, options.ignorepaths || [ "notifications." ]);
+        log.N("alarm system started (monitoring %d key%s)", paths.length, (paths.length == 1)?"":"s");
+        paths.forEach(path => {
           var meta = app.getSelfPath(path + ".meta");
-          if ((meta) && (meta.zones) && (meta.zones.length)) {
-            let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
-            zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
-            var stream = app.streambundle.getSelfStream(path);
-            var updated = false;
-            unsubscribes.push(stream.skipDuplicates().onValue(v => {
-              var notification = alarmCheck(v, zones);
-              if (notification) { // Value is alarming...
-                if ((!notificationDigest[path]) || (notificationDigest[path].state != notification.state)) {
-                  notificationDigest[path] = notification;
-                  log.N("issuing notification on '%s'", path);
-                  (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
-                  updated = true;
-                }
-                if ((updated) && (options.outputs)) {
-                  var alarmPath = options.outputs.reduce((a,o) => { return((o.triggerstates.includes(notification.state))?o.triggerpath:a); }, null);
-                  if (alarmPath) app.putSelfPath(alarmPath + ".state", 1);
-                }
-              } else {
-                if (notificationDigest[path]) {
-                  log.N("cancelling notification on '%s'", path);
-                  delete notificationDigest[path];
-                  (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
-                  updated = true;
-                }
+          let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
+          zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
+          var stream = app.streambundle.getSelfStream(path);
+          var updated = false;
+          unsubscribes.push(stream.skipDuplicates().onValue(v => {
+            var notification = alarmCheck(v, zones);
+            if (notification) { // Value is alarming...
+              if ((!notificationDigest[path]) || (notificationDigest[path].state != notification.state)) {
+                notificationDigest[path] = notification;
+                log.N("issuing notification on '%s'", path);
+                (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
+                updated = true;
               }
-              if (updated) {
-                (new Delta(app, plugin.id)).addValue(PLUGIN_DIGEST_KEY, Object.keys(notificationDigest).map(key => notificationDigest[key])).commit().clear();
+              if ((updated) && (options.outputs)) {
+                var alarmPath = options.outputs.reduce((a,o) => { return((o.triggerstates.includes(notification.state))?o.triggerpath:a); }, null);
+                if (alarmPath) app.putSelfPath(alarmPath + ".state", 1);
               }
-            }));
-          }
+            } else {
+              if (notificationDigest[path]) {
+                log.N("cancelling notification on '%s'", path);
+                delete notificationDigest[path];
+                (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
+                updated = true;
+              }
+            }
+            if (updated) {
+              (new Delta(app, plugin.id)).addValue(PLUGIN_DIGEST_KEY, Object.keys(notificationDigest).map(key => notificationDigest[key])).commit().clear();
+            }
+          }));
         });
       }
     }));
@@ -103,6 +102,17 @@ module.exports = function (app) {
     });
     return(notificationValue);
   }
+
+  function getAlarmPaths(app, ignore=[]) {
+    var retval = app.streambundle.getAvailablePaths()
+      .filter(p => !ignore.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))
+      .filter(p => {
+        var meta = app.getSelfPath(p + ".meta");
+        return((meta) && (meta.zones) && (meta.zones.length > 0));
+      });
+    return(retval);
+  }
+   
 
   return(plugin);
 }
