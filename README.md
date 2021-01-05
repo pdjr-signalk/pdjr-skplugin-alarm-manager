@@ -58,14 +58,16 @@ This behaviour can be used to trigger external annunciators in response
 to internal alarm states.
 
 The correct operation of __signalk-alarm__ depends upon the presence
-of meta information at the time a trigger key is processed and for a
-short time following a server restart it may be that dynamically
-generated meta data is not yet in place.
+of meta information at the time a trigger key is processed.
+There is a short period following a server restart during which it is
+possible that dynamically generated meta data is not yet in place.
 To ensure that alarm conditions are not missed during this critical
 phase it is possible to defer the start of alarm processing until a
 true-ish condition appears on a trigger key defined by the configuration
 __starton__ property.
 True-ish means either numeric 1 or the presence of a notification.
+If __starton__ is not defined that __signalk-alarm__ will begin execution
+immediately on server boot.
 
 ## Example configuration
 ```
