@@ -1,7 +1,7 @@
 {
   "name": "signalk-alarm",
   "version": "1.0.0",
-  "description": "Inject alarm notification into Signal K",
+  "description": "Issue notification and other outputs in response to Signal K alarm conditions",
   "main": "index.js",
   "signalk-plugin-enabled-by-default": true,
   "scripts": {
