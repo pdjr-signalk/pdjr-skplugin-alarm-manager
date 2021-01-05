@@ -103,5 +103,5 @@ The __outputs__ configuration controls a two-channel external relay (usb0) that
 announces the presence of 'warn'/'alert' notifications through a 'low priority'
 relay channel (usb0.1) and 'alarm'/'emergency' notifications through a 'high
 priority' relay channel (usb0.2).
-See [__signalk-devantch__](https://github.com/preeve9534/signalk-meta#readme)
+See [__signalk-devantch__](https://github.com/preeve9534/signalk-devantech#readme)
 for details of the hardware interface.
