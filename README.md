@@ -1,6 +1,7 @@
 # signalk-alarm
 
-Alarm plugin with webapp support.
+Issue notification and other outputs in response to Signal K alarm
+conditions.
 
 __signalk-alarm__ implements a centralised mechanism for issuing alarm
 notifications contingent upon the alarm configuration properties
