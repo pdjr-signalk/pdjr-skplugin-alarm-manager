@@ -31,7 +31,7 @@ in response to the system's alarm state.
 This allows, for example, the host system to operate arbitrary types of
 physical annunciator.
 
-[signalk-alarm widget](https://github.com/preeve9534/signalk-alarm-widget)
+[signalk-alarm-widget](https://github.com/preeve9534/signalk-alarm-widget)
 is a simple web component that can be included in any webapp to provide
 a front-end annunciator for __signalk-alarm__.
 
