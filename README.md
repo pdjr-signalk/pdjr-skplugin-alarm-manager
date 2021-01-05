@@ -92,8 +92,8 @@ The reference implementation on my boat looks like this.
 
 __ignorepaths__ eliminates all the key trees I don't want to monitor.
 
-__starton__ points to the location of the notification issued by the plugin
-I use to inject dynamic meta data.
+__starton__ points to the location of the 'completed' notification issued
+by the plugin I use to inject dynamic meta data.
 See [__signalk-meta__](https://github.com/preeve9534/signalk-meta#readme).
 
 I have a multi-channel alarm controller installed at the ship's helm which
