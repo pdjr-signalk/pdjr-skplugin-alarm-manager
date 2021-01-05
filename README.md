@@ -45,18 +45,18 @@ The __ignorepaths__ configuration property allows sections of the
 Signal K tree to be excluded wholesale from alarm processing.
 
 Values appearing on an alarm *key* are checked against the associated
-meta zones configuration and if the value falls within a defined zone
-then __signalk-alarm__ will issue a notification on the path
-"notifications.*key*" using the rules defined in the meta.
+meta zones configuration and if their value falls within an alarm zone
+then a notification will be issues on the path 'notifications.*key*'
+using the rules defined in the meta.
 
-__signalk-alarm__ can also be used to maintain via PUT requests the
-values on output channels defined under the __outputs__ configuration
-property.
-This feature is intended to allow the plugin to operate one or more
-output switches or relays in response to the presence or absence of
-active alarm notifications with particular state property values.
-This behaviour can be used to trigger external annunciators in response
-to internal alarm states.
+The __outputs__ configuration property can be used to specify one or
+more switch output paths which will be updated using PUT requests in
+response to the presence or absence of active alarm notifications.
+In this way the plugin can operate one or more output switches or
+relays in response to the presence or absence of active alarm
+notifications with particular state property values.
+This feature allows external annunciators to be operated in direct
+response to Signal K's internal alarm state.
 
 The correct operation of __signalk-alarm__ depends upon the presence
 of meta information at the time a trigger key is processed.
@@ -73,7 +73,6 @@ immediately on server boot.
 ## Example configuration
 
 The reference implementation on my boat looks like this.
-
 ```
 {
   "enabled": true,
@@ -103,5 +102,5 @@ The __outputs__ configuration controls a two-channel external relay (usb0) that
 announces the presence of 'warn'/'alert' notifications through a 'low priority'
 relay channel (usb0.1) and 'alarm'/'emergency' notifications through a 'high
 priority' relay channel (usb0.2).
-See [__signalk-devantch__](https://github.com/preeve9534/signalk-devantech#readme)
+See [__signalk-devantech__](https://github.com/preeve9534/signalk-devantech#readme)
 for details of the hardware interface.
