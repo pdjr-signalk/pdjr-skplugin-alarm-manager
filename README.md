@@ -49,8 +49,9 @@ meta zones configuration and if the value falls within a defined zone
 then __signalk-alarm__ will issue a notification on the path
 "notifications.*key*" using the rules defined in the meta.
 
-__signalk-alarm__ can also be used to maintain values on output
-channels defined under the __outputs__ configuration property.
+__signalk-alarm__ can also be used to maintain via PUT requests the
+values on output channels defined under the __outputs__ configuration
+property.
 This feature is intended to allow the plugin to operate one or more
 output switches or relays in response to the presence or absence of
 active alarm notifications with particular state property values.
@@ -66,10 +67,13 @@ phase it is possible to defer the start of alarm processing until a
 true-ish condition appears on a trigger key defined by the configuration
 __starton__ property.
 True-ish means either numeric 1 or the presence of a notification.
-If __starton__ is not defined that __signalk-alarm__ will begin execution
+If __starton__ is not defined then __signalk-alarm__ will begin execution
 immediately on server boot.
 
 ## Example configuration
+
+The reference implementation on my boat looks like this.
+
 ```
 {
   "enabled": true,
@@ -85,3 +89,19 @@ immediately on server boot.
   }
 }
 ```
+
+__ignorepaths__ eliminates all the key trees I don't want to monitor.
+
+__starton__ points to the location of the notification issued by the plugin
+I use to inject dynamic meta data.
+See [__signalk-meta__](https://github.com/preeve9534/signalk-meta#readme).
+
+I have a multi-channel alarm controller installed at the ship's helm which
+supports high and low priority inputs (low priority inputs light up an
+indicator whilst high priority inputs also sound a beeper).
+The __outputs__ configuration controls a two-channel external relay (usb0) that
+announces the presence of 'warn'/'alert' notifications through a 'low priority'
+relay channel (usb0.1) and 'alarm'/'emergency' notifications through a 'high
+priority' relay channel (usb0.2).
+See [__signalk-devantch__](https://github.com/preeve9534/signalk-meta#readme)
+for details of the hardware interface.
