@@ -1,19 +1,20 @@
 {
   "type": "object",
   "properties": {
+    "description": "Configuration properties for pdjr-skplugin-alarm-manager",
     "ignorepaths": {
       "type": "array",
-      "description": "Paths that that should be ignored by the alarm system",
+      "description": "Paths that that should be ignored by the alarm manager",
       "title": "Ignore keys under these paths", 
       "items": { "type": "string" }
     },
     "startton": {
-      "description": "Key which must true before the plugin will start",
+      "description": "Key which must be true before the plugin will start",
       "title": "Do not start processing until this key returns true",
       "type": "string"
     },
     "outputs": {
-      "description": "Switch paths that should be set when active alarms with the defines states are present",
+      "description": "Switch paths that should be set when active alarms with the defined states are present",
       "type": "array",
       "items": {
         "type": "object",

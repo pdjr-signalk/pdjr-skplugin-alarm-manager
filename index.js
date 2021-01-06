@@ -29,9 +29,9 @@ module.exports = function (app) {
   var unsubscribes = [];
   var notificationDigest = {};
 
-  plugin.id = 'alarm';
-  plugin.name = 'Alarm notifier';
-  plugin.description = 'Inject alarm notifications into Signal K';
+  plugin.id = 'pdjr-skplugin-alarm-manager';
+  plugin.name = 'Alarm manager';
+  plugin.description = 'Issue notification and other outputs in response to Signal K alarm conditions';
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
 
