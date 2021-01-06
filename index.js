@@ -50,7 +50,7 @@ module.exports = function (app) {
     unsubscribes.push(stream.onValue(v => {
       if (v) {
         var paths = getAvailableAlarmPaths(app, options.ignorepaths || [ "notifications." ]);
-        log.N("alarm system started (monitoring %d key%s)", paths.length, (paths.length == 1)?"":"s");
+        log.N("monitoring %d key%s", paths.length, (paths.length == 1)?"":"s");
         paths.forEach(path => {
           var meta = app.getSelfPath(path + ".meta");
           let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
