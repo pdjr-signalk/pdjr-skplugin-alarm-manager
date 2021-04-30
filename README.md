@@ -37,13 +37,15 @@ a front-end annunciator for __pdjr-skplugin-alarm-manager__.
 
 ## Operating principle
 
-The keys which __pdjr-skplugin-alarm-manager__ monitors are
-automatically derived from the Signal K tree by examination of those
-paths which are configured through their meta properties to support
-alarm function.
+__pdjr-skplugin-alarm-manager__ begins execution by recovering from the
+Signal K tree all keys which have an associated meta value containing
+a zones property and which are therefore able to support alarm
+function.
+The scope of this initial scan can be restricted by including in the
+__ignorepaths__ configuration property the names of paths which should
+not be scanned.
 
-The __ignorepaths__ configuration property allows sections of the
-Signal K tree to be excluded wholesale from alarm processing.
+Once a key collection is established, the plugin waits for the
 
 Values appearing on an alarm *key* are checked against the associated
 meta zones configuration and if their value falls within an alarm zone

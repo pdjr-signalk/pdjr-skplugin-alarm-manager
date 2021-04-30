@@ -1,7 +1,6 @@
 {
   "type": "object",
   "properties": {
-    "description": "Configuration properties for pdjr-skplugin-alarm-manager",
     "ignorepaths": {
       "type": "array",
       "description": "Paths that that should be ignored by the alarm manager",

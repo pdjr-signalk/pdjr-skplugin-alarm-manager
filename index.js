@@ -19,17 +19,19 @@ const Log = require("./lib/signalk-liblog/Log.js");
 const Schema = require("./lib/signalk-libschema/Schema.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
 
+const PLUGIN_ID = "pdjr-skplugin-alarm-manager";
 const PLUGIN_SCHEMA_FILE = __dirname + "/schema.json";
 const PLUGIN_UISCHEMA_FILE = __dirname + "/uischema.json";
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
-const PLUGIN_DIGEST_KEY = "notifications.plugins.alarm.digest";
+const PLUGIN_DIGEST_KEY = "notifications.plugins." + PLUGIN_ID + ".digest";
+const PLUGIN_NOTIFICATION_KEY = "notifications.plugins." + PLUGIN_ID + ".notification";
 
 module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
   var notificationDigest = {};
 
-  plugin.id = 'pdjr-skplugin-alarm-manager';
+  plugin.id = PLUGIN_ID;
   plugin.name = 'Alarm manager';
   plugin.description = 'Issue notification and other outputs in response to Signal K alarm conditions';
 
@@ -79,7 +81,11 @@ module.exports = function (app) {
               }
             }
             if (updated) {
-              (new Delta(app, plugin.id)).addValue(PLUGIN_DIGEST_KEY, Object.keys(notificationDigest).map(key => notificationDigest[key])).commit().clear();
+              var delta = new Delta(app, plugin.id);
+              delta.addValue(PLUGIN_DIGEST_KEY, Object.keys(notificationDigest).map(key => notificationDigest[key]));
+              var message = (Object.keys(notificationDigest).length)?Object.keys(notificationDigest).map(key => (notificationDigest[key].state.toUpperCase() + ": " + notificationDigest[key].message)).join('\\n'):"All alarms cleared";
+              delta.addValue(PLUGIN_NOTIFICATION_KEY, { message: message, state: 'alert', method: [] });
+              delta.commit().clear();
             }
           }));
         });
