@@ -39,47 +39,19 @@ notification state.
 This allows, for example, the operation of various types of physical
 annunciator.
 
-## Operating principle
-
-The plugin monitors all keys in the Signal K tree which have an
-associated metadata object that contains a 'zones' property and which
-are therefore able to support alarm function.
-The scope of monitored keys can be restricted by including in
-*ignorepaths* the names of paths which should not be .
-
-Once a key collection is established, the plugin waits for values
-appearing on a *key* and checks these against the associated metadata
-zones configuration: if the key value falls within an alarm zone
-then a notification will be issues on the path 'notifications.*key*'
-using the rules defined in the key's metadata.
-
-
-The correct operation of __pdjr-skplugin-alarm-manager__ depends upon
-the presence of meta information at the time a trigger key is
-processed.
-There is a short period following a server restart during which it is
-possible that dynamically generated meta data is not yet in place.
-To ensure that alarm conditions are not missed during this critical
-phase it is possible to defer the start of alarm processing until a
-true-ish condition appears on a trigger key defined by the
-configuration __starton__ property.
-True-ish means either numeric 1 or the presence of a notification.
-If __starton__ is not defined then __pdjr-skplugin-alarm-manager__ will
-begin execution immediately on server boo
-
 ## Configuration
 
 The plugin configuration has the following properties.
 
 | Property name | Value type | Value default                  | Description |
 | :------------ | :--------- | :----------------------------- | :---------- |
-| digestpath    | String     | 'plugins.alarm-manager.digest' | Where to save the alarm notification digest. |
+| digestpath    | String     | 'plugins.alarm-manager.digest' | Where to maintain the alarm notification digest. |
 | ignorepaths   | Array      | (see below)                    | Collection of prefixes of paths which should not be monitored. |
 | outputs       | Array      | []                             | Collection of *output* objects. |
 
 *ignorepaths* has an internal default of:
 ```
-[ "design.", "electrical.", "environment.", "network.", "notifications.", "sensors." ]
+[ "design.", "electrical.", "environment.", "network.", "notifications.", "plugins", "sensors." ]
 ```
 
 Each *output* object has the following properties.
@@ -102,14 +74,28 @@ which are in turn connected to visual and audible annunciators.
   "enableLogging": false,
   "enableDebug": false,
   "configuration": {
-    "ignorepaths": [ "design.", "electrical.", "environment.", "network.", "notifications.", "sensors." ],
     "outputs": [
-      { "switchpath": "electrical.switches.bank.usb0.1", "triggerstates": [ "warn", "alert" ] },
-      { "switchpath": "electrical.switches.bank.usb0.2", "triggerstates": [ "alarm", "emergency" ] }
+      { "path": "electrical.switches.bank.usb0.1", "triggerstates": [ "warn", "alert" ] },
+      { "path": "electrical.switches.bank.usb0.2", "triggerstates": [ "alarm", "emergency" ] }
     ]
   }
 }
 ```
+
+## Operating principle
+
+The plugin monitors all selected keys in the Signal K tree which have
+an associated metadata object that contains a 'zones' property and
+which are therefore able to support alarm function.
+
+The plugin waits for values to appear on each key and checks these
+against the associated metadata alarm zones configuration: if the key
+value falls within an alarm zone then a notification will be issued on
+the path 'notifications.*key*' using the rules defined in the *key*'s
+metadata zones property.
+
+Each time a notification is issued the alarm digest and any specified
+output channel states are updated.
 
 ## Author
 
