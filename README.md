@@ -75,7 +75,7 @@ which are in turn connected to visual and audible annunciators.
   "enableDebug": false,
   "configuration": {
     "outputs": [
-      { "path": "electrical.switches.bank.usb0.1", "triggerstates": [ "warn", "alert" ] },
+      { "path": "electrical.switches.bank.usb0.1", "triggerstates": [ "warn", "alert", "alarm", "emergency" ] },
       { "path": "electrical.switches.bank.usb0.2", "triggerstates": [ "alarm", "emergency" ] }
     ]
   }
