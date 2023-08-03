@@ -23,6 +23,11 @@ const PLUGIN_DESCRIPTION = "Issue notification and other outputs in response to 
 const PLUGIN_SCHEMA = {
   "type": "object",
   "properties": {
+    "digestpath": {
+      "type": "string",
+      "description": "Where to put the alarm notification digest",
+      "default": "plugins.alarm-manager.digest"
+    },
     "ignorepaths": {
       "type": "array",
       "description": "Paths that that should be ignored by the alarm manager",
@@ -49,82 +54,90 @@ const PLUGIN_SCHEMA = {
 }
 const PLUGIN_UISCHEMA = {};
 
-const OPTIONS_IGNOREPATHS_DEFAULT = [ "design.", "electrical.", "environment.", "network.", "notifications.", "sensors." ];
-const OPTIONS_OUTPUTS_DEFAULT = [];
-
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
 const PLUGIN_DIGEST_KEY = "plugins." + PLUGIN_ID + ".digest";
 
 module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
-  var notificationDigest = { "normal": [], "alert": [], "warn": [], "alarm": [], "emergency": [] };
-  var log = new Log();
+  var notificationDigest = { };
 
   plugin.id = PLUGIN_ID;
   plugin.name = PLUGIN_NAME;
   plugin.description = PLUGIN_DESCRIPTION;
   plugin.schema = PLUGIN_SCHEMA;
   plugin.uiSchema = PLUGIN_UISCHEMA;
+
+  const log = new Log(plugin.id);
   
   plugin.start = function(options, restartPlugin) {
     var numberOfAvailablePaths = 0;
+    var numberOfAvailableAlarmPaths = 0;
+
+    options.digestpath = (options.digestpath || plugin.schema.properties.digestpath);
+    options.ignorepaths = (options.ignorepaths || plugin.schema.properties.ignorepaths);
+    options.outputs = (options.outputs || plugin.schema.properties.outputs);
 
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
-        if (numberOfAvailablePaths == 0) {
-          numberOfAvailablePaths = e.data.numberOfAvailablePaths;
-        } else {
-          if (numberOfAvailablePaths != e.data.numberOfAvailablePaths) {
-            log.N("restarting plugin");
-            restartPlugin();
+        if (e.data.numberOfAvailablePaths != numberOfAvailablePaths) {
+          var availableAlarmPaths = getAvailableAlarmPaths(app, options.ignorepaths);
+          if (availableAlarmPaths.length != numberOfAvailableAlarmPaths) {
+            numberOfAvailableAlarmPaths = availableAlarmPaths.length;
+            if (unsubscribes) { unsubscribes.forEach(f => f()); unsubscribes = []; }
+            log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
+            startAlarmMonitoring(availableAlarmPaths);
           }
         }
       }
     });
 
-    options.ignorepaths = (options.ignorepaths || OPTIONS_IGNOREPATHS_DEFAULT);
-    options.outputs = (options.outputs || OPTIONS_OUTPUTS_DEFAULT);
-
-    var alarmPaths = getAvailableAlarmPaths(app, options.ignorepaths);
-    log.N("monitoring %d alarm path%s", alarmPaths.length, (alarmPaths.length == 1)?"":"s");
-    alarmPaths.forEach(path => {
-      var meta = app.getSelfPath(path + ".meta");
-      let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
-      zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
-      var stream = app.streambundle.getSelfStream(path);
-      unsubscribes.push(stream.skipDuplicates().onValue(v => {
-        var updated = false;
-        var notification = getAlarmNotification(v, zones);
-        if (notification) { // Value is alarming...
-          if (!notificationDigest.includes(path)) {
-            log.N("issuing notification on '%s'", path);
-            notificationDigest[notification.state].push(path);
-            (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
-            updated = true;
+    function startAlarmMonitoring(availableAlarmPaths) {
+      availableAlarmPaths.forEach(path => {
+        var meta = app.getSelfPath(path + ".meta");
+        let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
+        zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
+        var stream = app.streambundle.getSelfStream(path);
+        unsubscribes.push(stream.skipDuplicates().onValue(v => {
+          var updated = false;
+          var notification = getAlarmNotification(v, zones);
+          if (notification) { // Value is alarming...
+            if (notificationDigest[path] != notification.state) {
+              log.N("issuing notification on '%s'", path, false);
+              notificationDigest[path] = notification.state;
+              (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
+              updated = true;
+            }
+          } else {
+            if (notificationDigest[path]) {
+              log.N("cancelling notification on '%s'", path, false);
+              delete notificationDigest[path];
+              (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
+              updated = true;
+            }
           }
-        } else {
-          if (notificationDigest.includes(path)) {
-            log.N("cancelling notification on '%s'", path);
-            Object.keys(notificationDigest).forEach(key => delete notificationDigest[key][path]);
-            (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
-            updated = true;
+          if (updated) {
+            (new Delta(app, plugin.id)).addValue(options.digestpath, notificationDigest).commit().clear();
+            var currentDigestStates = Object.keys(notificationDigest).map(key => notificationDigest[key]); 
+            if (options.outputs) {
+              options.outputs.forEach(output => {
+                app.putSelfPath(
+                  output.path + ".state",
+                  (((output.triggerstates.filter(state => currentDigestStates.includes(state))).length > 0)?1:0)
+                );
+              });
+            }
           }
-        }
-        if (updated) {
-          (new Delta(app, plugin.id)).addValue(PLUGIN_DIGEST_KEY, notificationDigest).commit().clear();
-          if (options.outputs) {
-            var outputPath = options.outputs.reduce((a,o) => { return((o.triggerstates.includes(notification.state))?o.path:a); }, null);
-            if (outputPath) app.putSelfPath(outputPath + ".state", 1);
-          }
-        }
-      }));
-    });
+        }));
+      });
+    }
   }
 
   plugin.stop = function() {
-	unsubscribes.forEach(f => f());
-    var unsubscribes = [];
+	  if (unsubscribes) {
+      unsubscribes.forEach(f => f());
+      unsubscribes = [];
+    }
   }
 
   /********************************************************************
@@ -134,12 +147,21 @@ module.exports = function (app) {
 
   function getAlarmNotification(value, zones) {
     var notificationValue = null;
+    var selectedZone = null;
     zones.forEach(zone => {
       if (((!zone.lower) || (value >= zone.lower)) && ((!zone.upper) || (value <= zone.upper))) {
-        var now = Date.now();
-        notificationValue = { "state": zone.state, "method": zone.method, "message": zone.message, "id": now };
+        if (!selectedZone) {
+          selectedZone = zone;
+        } else {
+          if ((zone.lower) && (zone.lower > selectedZone.lower)) selectedZone = zone;
+          if ((zone.upper) && (zone.upper < selectedZone.upper)) selectedZone = zone;
+        }
       }
     });
+    if (selectedZone) {
+      var now = Date.now();
+      notificationValue = { "state": selectedZone.state, "method": selectedZone.method, "message": selectedZone.message, "id": now };
+    }
     return(notificationValue);
   }
 
@@ -159,6 +181,16 @@ module.exports = function (app) {
         return((meta) && (meta.zones) && (meta.zones.length > 0));
       });
     return(retval);
+  }
+
+  function digestIncludesPath(digest, path) {
+    retval = null;
+    Object.keys(digest).forEach(key => { if (digest[key].includes(path)) retval = key; });
+    return(retval);
+  }
+
+  function digestDeletePath(digest, path) {
+    Object.keys(digest).forEach(key => { delete digest[key][path]});
   }
    
   return(plugin);

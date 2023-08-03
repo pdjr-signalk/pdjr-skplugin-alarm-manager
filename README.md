@@ -20,30 +20,32 @@ response to an alarm condition.
 
 Firstly, it reponds to the requirements of the Signal K specification
 by issuing notifications: thus, an alarm triggered by a value on *key*
-will raise a notification on 'notifications.*key*'.
+will raise a notification on 'notifications.*key*' whenever the value
+of *key* enters an alarm zone defined in *key*'s metadata.
 
-Secondly, the plugin maintains a digest of active alarm notifications
-at 'notifications.plugins.alarm-manager.digest'.
-The digest is simply a JSON array of the keys which currently have
-active alarm notifications and provides a convenient data set for use
-by software annunciators or other alarm consumers.
+Secondly, the plugin maintains a digest of current alarm notifications.
+The digest is a JSON object whose property names are notified *key*
+values and whose property values are the current notification state of
+the associated *key*.
+This digest provides a convenient data set for use by software
+annunciators or other alarm consumers.
 
-Thirdly, the plugin may operate one or more user-defined switch or
-notification outputs in response to the system's consolidated alarm
+Thirdly, the plugin operates zero or more user-defined switch or
+notification outputs in response to the system's aggregate alarm
 state.
-This allows, for example, the host system to operate arbitrary types of
-physical annunciator.
+In this context the system alarm state is 'alert' if any individual
+alarm is in an 'alert' state and similarly for each possible
+notification state.
+This allows, for example, the operation of various types of physical
+annunciator.
 
 ## Operating principle
 
-The plugin monitors the number of paths available withing Signal K and
-restarts if this value changes during execution.
-
-Once started the plugin subscribes to all keys in the Signal K tree
-which have an associated metadata object that contains a 'zones'
-property and which are therefore able to support alarm function.
-The scope of this initial scan can be restricted by including in
-*ignorepaths* the names of paths which should not be scanned.
+The plugin monitors all keys in the Signal K tree which have an
+associated metadata object that contains a 'zones' property and which
+are therefore able to support alarm function.
+The scope of monitored keys can be restricted by including in
+*ignorepaths* the names of paths which should not be .
 
 Once a key collection is established, the plugin waits for values
 appearing on a *key* and checks these against the associated metadata
@@ -69,10 +71,11 @@ begin execution immediately on server boo
 
 The plugin configuration has the following properties.
 
-| Property name | Value type | Value default | Description |
-| :------------ | :--------- | :------------ | :---------- |
-| ignorepaths   | Array      | (see below)   | Collection of prefixes of paths which should not be monitored. |
-| outputs       | Array      | []            | Collection of *output* objects. |
+| Property name | Value type | Value default                  | Description |
+| :------------ | :--------- | :----------------------------- | :---------- |
+| digestpath    | String     | 'plugins.alarm-manager.digest' | Where to save the alarm notification digest. |
+| ignorepaths   | Array      | (see below)                    | Collection of prefixes of paths which should not be monitored. |
+| outputs       | Array      | []                             | Collection of *output* objects. |
 
 *ignorepaths* has an internal default of:
 ```
