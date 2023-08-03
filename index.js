@@ -16,81 +16,110 @@
 
 const bacon = require("baconjs");
 const Log = require("./lib/signalk-liblog/Log.js");
-const Schema = require("./lib/signalk-libschema/Schema.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
 
-const PLUGIN_ID = "pdjr-skplugin-alarm-manager";
-const PLUGIN_SCHEMA_FILE = __dirname + "/schema.json";
-const PLUGIN_UISCHEMA_FILE = __dirname + "/uischema.json";
+const PLUGIN_ID = "alarm-manager";
+const PLUGIN_NAME = "pdjr-skplugin-alarm-manager";
+const PLUGIN_DESCRIPTION = "Issue notification and other outputs in response to Signal K alarm conditions.";
+const PLUGIN_SCHEMA_ = {
+  "type": "object",
+  "properties": {
+    "ignorepaths": {
+      "type": "array",
+      "description": "Paths that that should be ignored by the alarm manager",
+      "title": "Ignore keys under these paths", 
+      "items": { "type": "string" },
+      "default": []
+    },
+    "outputs": {
+      "description": "Switch paths that should be set when active alarms with the defined states are present",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "triggerstates": {
+            "type": "array",
+            "items": { "type": "string", "enum": [ "normal", "warn", "alert", "alarm", "emergency" ] }
+          }
+        }
+      },
+      "default": []
+    }
+  }
+}
+const PLUGIN_UISCHEMA = {};
+
+const OPTIONS_IGNOREPATHS_DEFAULT = [ "design.", "electrical.", "environment.", "network.", "notifications.", "sensors." ];
+const OPTIONS_OUTPUTS_DEFAULT = [];
+
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
-const PLUGIN_DIGEST_KEY = "notifications.plugins." + PLUGIN_ID + ".digest";
-const PLUGIN_NOTIFICATION_KEY = "notifications.plugins." + PLUGIN_ID + ".notification";
+const PLUGIN_DIGEST_KEY = "plugins." + PLUGIN_ID + ".digest";
 
 module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
-  var notificationDigest = {};
+  var notificationDigest = { "normal": [], "alert": [], "warn": [], "alarm": [], "emergency": [] };
 
   plugin.id = PLUGIN_ID;
-  plugin.name = 'Alarm manager';
-  plugin.description = 'Issue notification and other outputs in response to Signal K alarm conditions';
+  plugin.name = PLUGIN_NAME;
+  plugin.description = PLUGIN_DESCRIPTION;
+  plugin.schema = PLUGIN_SCHEMA;
+  plugin.uiSchema = PLUGIN_UISCHEMA;
+  
+  plugin.start = function(options, restartPlugin) {
+    var numberOfAvailablePaths = 0;
 
-  const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
-
-  plugin.schema = function() {
-    var schema = Schema.createSchema(PLUGIN_SCHEMA_FILE);
-    return(schema.getSchema());
-  };
-
-  plugin.uiSchema = function() {
-    var schema = Schema.createSchema(PLUGIN_UISCHEMA_FILE);
-    return(schema.getSchema());
-  }
-
-  plugin.start = function(options) {
-    var stream = (options.starton)?app.streambundle.getSelfStream(options.starton):bacon.constant(1);
-    unsubscribes.push(stream.onValue(v => {
-      if (v) {
-        var paths = getAvailableAlarmPaths(app, options.ignorepaths || [ "notifications." ]);
-        log.N("monitoring %d key%s", paths.length, (paths.length == 1)?"":"s");
-        paths.forEach(path => {
-          var meta = app.getSelfPath(path + ".meta");
-          let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
-          zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
-          var stream = app.streambundle.getSelfStream(path);
-          var updated = false;
-          unsubscribes.push(stream.skipDuplicates().onValue(v => {
-            var notification = getAlarmNotification(v, zones);
-            if (notification) { // Value is alarming...
-              if ((!notificationDigest[path]) || (notificationDigest[path].state != notification.state)) {
-                notificationDigest[path] = notification;
-                log.N("issuing notification on '%s'", path);
-                (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
-                updated = true;
-              }
-              if ((updated) && (options.outputs)) {
-                var alarmPath = options.outputs.reduce((a,o) => { return((o.triggerstates.includes(notification.state))?o.triggerpath:a); }, null);
-                if (alarmPath) app.putSelfPath(alarmPath + ".state", 1);
-              }
-            } else {
-              if (notificationDigest[path]) {
-                log.N("cancelling notification on '%s'", path);
-                delete notificationDigest[path];
-                (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
-                updated = true;
-              }
-            }
-            if (updated) {
-              var delta = new Delta(app, plugin.id);
-              delta.addValue(PLUGIN_DIGEST_KEY, Object.keys(notificationDigest).map(key => notificationDigest[key]));
-              var message = (Object.keys(notificationDigest).length)?Object.keys(notificationDigest).map(key => (notificationDigest[key].state.toUpperCase() + ": " + notificationDigest[key].message)).join('\\n'):"All alarms cleared";
-              delta.addValue(PLUGIN_NOTIFICATION_KEY, { message: message, state: 'alert', method: [] });
-              delta.commit().clear();
-            }
-          }));
-        });
+    app.on('serverevent', (e) => {
+      if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
+        if (numberOfAvailablePaths == 0) {
+          numberOfAvailablePaths = e.data.numberOfAvailablePaths;
+        } else {
+          if (numberOfAvailablePaths != e.data.numberOfAvailablePaths) {
+            log.N("restarting plugin");
+            restartPlugin();
+          }
+        }
       }
-    }));
+    });
+
+    options.ignorepaths = (options.ignorepaths || OPTIONS_IGNOREPATHS_DEFAULT);
+    options.outputs = (options.outputs || OPTIONS_OUTPUTS_DEFAULT);
+
+    var alarmPaths = getAvailableAlarmPaths(app, options.ignorepaths);
+    log.N("monitoring %d alarm path%s", alarmPaths.length, (alarmPaths.length == 1)?"":"s");
+    alarmPaths.forEach(path => {
+      var meta = app.getSelfPath(path + ".meta");
+      let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
+      zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
+      var stream = app.streambundle.getSelfStream(path);
+      unsubscribes.push(stream.skipDuplicates().onValue(v => {
+        var updated = false;
+        var notification = getAlarmNotification(v, zones);
+        if (notification) { // Value is alarming...
+          if (!notificationDigest.includes(path)) {
+            log.N("issuing notification on '%s'", path);
+            notificationDigest[notification.state].push(path);
+            (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
+            updated = true;
+          }
+        } else {
+          if (notificationDigest.includes(path)) {
+            log.N("cancelling notification on '%s'", path);
+            Object.keys(notificationDigest).forEach(key => delete notificationDigest[key][path]);
+            (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
+            updated = true;
+          }
+        }
+        if (updated) {
+          (new Delta(app, plugin.id)).addValue(PLUGIN_DIGEST_KEY, notificationDigest).commit().clear();
+          if (options.outputs) {
+            var outputPath = options.outputs.reduce((a,o) => { return((o.triggerstates.includes(notification.state))?o.path:a); }, null);
+            if (outputPath) app.putSelfPath(outputPath + ".state", 1);
+          }
+        }
+      }));
+    });
   }
 
   plugin.stop = function() {
