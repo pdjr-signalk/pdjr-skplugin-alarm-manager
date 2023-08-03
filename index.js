@@ -121,10 +121,7 @@ module.exports = function (app) {
             var currentDigestStates = Object.keys(notificationDigest).map(key => notificationDigest[key]); 
             if (options.outputs) {
               options.outputs.forEach(output => {
-                app.putSelfPath(
-                  output.path + ".state",
-                  (((output.triggerstates.filter(state => currentDigestStates.includes(state))).length > 0)?1:0)
-                );
+                updateOutput(output.path + '.state', (((output.triggerstates.filter(state => currentDigestStates.includes(state))).length > 0)?1:0));
               });
             }
           }
@@ -163,6 +160,18 @@ module.exports = function (app) {
       notificationValue = { "state": selectedZone.state, "method": selectedZone.method, "message": selectedZone.message, "id": now };
     }
     return(notificationValue);
+  }
+
+  function updateOutput(path, state) {
+    if (path.match(/^switches\.(.*)$/)) {
+      app.putSelfPath(path, state);
+    } else if ((path.match(/^notifications\.(.*)\:(.*)\:(.*)$/)) && (matches.length == 4)) {
+      (new Delta(app.plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': matches[2], 'method': [] }:{ 'state': matches[3]}).commit().clear();
+    } else if ((path.match(/^notifications\.(.*)\:(.*)$/)) && (matches.length == 3)) {
+      (new Delta(app.plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': matches[2], 'method': [] }:null).commit().clear();
+    } else if ((path.match(/^notifications\.(.*)$/)) && (matches.length == 2)) {
+      (new Delta(app.plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': 'normal', 'method': [] }:null).commit().clear();
+    }
   }
 
   /********************************************************************
