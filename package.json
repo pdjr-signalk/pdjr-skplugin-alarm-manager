@@ -3,27 +3,24 @@
   "version": "1.0.0",
   "description": "Issue notification and other outputs in response to Signal K alarm conditions",
   "main": "index.js",
+  "signalk-plugin-enabled-by-default": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/preeve9534/pdjr-skplugin-alarm-manager.git"
+    "url": "git+https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager.git"
   },
   "keywords": [
     "signalk-node-server-plugin",
-    "signalk",
-    "alarm",
-    "manager",
-    "notifications",
-    "plugin"
+    "signalk-category-utility"
   ],
   "author": "Paul Reeve <preeve@pdjr.eu>",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/preeve9534/pdjr-skplugin-alarm-manager/issues"
+    "url": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager/issues"
   },
-  "homepage": "https://github.com/preeve9534/pdjr-skplugin-alarm-manager#readme",
+  "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme",
   "dependencies": {
     "baconjs": "^1.0.1",
     "sprintf-js": "^1.1.2"

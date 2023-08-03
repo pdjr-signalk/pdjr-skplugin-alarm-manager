@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-const bacon = require("baconjs");
 const Log = require("./lib/signalk-liblog/Log.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
 
 const PLUGIN_ID = "alarm-manager";
 const PLUGIN_NAME = "pdjr-skplugin-alarm-manager";
 const PLUGIN_DESCRIPTION = "Issue notification and other outputs in response to Signal K alarm conditions.";
-const PLUGIN_SCHEMA_ = {
+const PLUGIN_SCHEMA = {
   "type": "object",
   "properties": {
     "ignorepaths": {
@@ -60,6 +59,7 @@ module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
   var notificationDigest = { "normal": [], "alert": [], "warn": [], "alarm": [], "emergency": [] };
+  var log = new Log();
 
   plugin.id = PLUGIN_ID;
   plugin.name = PLUGIN_NAME;
