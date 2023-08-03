@@ -120,7 +120,11 @@ module.exports = function (app) {
             var currentDigestStates = Object.keys(notificationDigest).map(key => notificationDigest[key]); 
             if (options.outputs) {
               options.outputs.forEach(output => {
-                updateOutput(output, (((output.triggerstates.filter(state => currentDigestStates.includes(state))).length > 0)?1:0));
+                try {
+                  updateOutput(output, (((output.triggerstates.filter(state => currentDigestStates.includes(state))).length > 0)?1:0));
+                } catch(e) {
+                  log.E("bad output path '%s'", e.message, false);
+                }
               });
             }
           }
@@ -130,9 +134,9 @@ module.exports = function (app) {
 
     function updateOutput(output, state) {
       var matches;
-      if ((matches = output.path.match(/^switches\.(.*)$/)) && (matches == 2)) {
+      if ((matches = output.path.match(/^switches\.(.*)\.state$/)) && (matches == 2)) {
         if (output.lastUpdateState != state) {
-          app.putSelfPath(path + '.state', state);
+          app.putSelfPath(path, state);
           output.lastUpdateState = state;
         }
       } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)\:(.*)$/)) && (matches.length == 4)) {
@@ -153,6 +157,8 @@ module.exports = function (app) {
           (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': state, 'method': [] }:null).commit().clear();
           output.lastUpdateState = state;
         }
+      } else {
+        throw new Error(output.path);
       }
     }  
 
