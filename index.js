@@ -33,7 +33,7 @@ const PLUGIN_SCHEMA = {
       "description": "Paths that that should be ignored by the alarm manager",
       "title": "Ignore keys under these paths", 
       "items": { "type": "string" },
-      "default": []
+      "default": [ "design.", "electrical.", "environment.", "network.", "notifications.", "plugins.", "sensors." ]
     },
     "outputs": {
       "description": "Switch paths that should be set when active alarms with the defined states are present",
@@ -74,9 +74,9 @@ module.exports = function (app) {
     var numberOfAvailablePaths = 0;
     var numberOfAvailableAlarmPaths = 0;
 
-    options.digestpath = (options.digestpath || plugin.schema.properties.digestpath);
-    options.ignorepaths = (options.ignorepaths || plugin.schema.properties.ignorepaths);
-    options.outputs = (options.outputs || plugin.schema.properties.outputs);
+    options.digestpath = (options.digestpath || plugin.schema.properties.digestpath.default);
+    options.ignorepaths = (options.ignorepaths || plugin.schema.properties.ignorepaths.default);
+    options.outputs = (options.outputs || plugin.schema.properties.outputs.default);
 
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
@@ -103,14 +103,14 @@ module.exports = function (app) {
           var notification = getAlarmNotification(v, zones);
           if (notification) { // Value is alarming...
             if (notificationDigest[path] != notification.state) {
-              log.N("issuing notification on '%s'", path, false);
+              app.debug("issuing notification on '%s'", path);
               notificationDigest[path] = notification.state;
               (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
               updated = true;
             }
           } else {
             if (notificationDigest[path]) {
-              log.N("cancelling notification on '%s'", path, false);
+              app.debug("cancelling notification on '%s'", path);
               delete notificationDigest[path];
               (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
               updated = true;
@@ -175,7 +175,7 @@ module.exports = function (app) {
 
   function getAvailableAlarmPaths(app, ignore=[]) {
     var retval = app.streambundle.getAvailablePaths()
-      .filter(p => !ignore.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))
+      .filter(p => (!(ignore.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
       .filter(p => {
         var meta = app.getSelfPath(p + ".meta");
         return((meta) && (meta.zones) && (meta.zones.length > 0));
