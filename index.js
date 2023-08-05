@@ -101,9 +101,9 @@ module.exports = function (app) {
           var updated = false;
           var notification = getAlarmNotification(v, zones);
           if (notification) { // Value is alarming...
-            if (notificationDigest[path] != notification.state) {
+            if ((!notificationDigest[path]) || (notificationDigest[path].state != notification.state)) {
               app.debug("issuing notification on '%s'", path);
-              notificationDigest[path] = notification.state;
+              notificationDigest[path] = notification;
               (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
               updated = true;
             }
@@ -117,7 +117,7 @@ module.exports = function (app) {
           }
           if (updated) {
             (new Delta(app, plugin.id)).addValue(options.digestpath, notificationDigest).commit().clear();
-            var currentDigestStates = Object.keys(notificationDigest).map(key => notificationDigest[key]); 
+            var currentDigestStates = Object.keys(notificationDigest).map(key => notificationDigest[key].state); 
             if (options.outputs) {
               options.outputs.forEach(output => {
                 try {
@@ -212,16 +212,6 @@ module.exports = function (app) {
         return((meta) && (meta.zones) && (meta.zones.length > 0));
       });
     return(retval);
-  }
-
-  function digestIncludesPath(digest, path) {
-    retval = null;
-    Object.keys(digest).forEach(key => { if (digest[key].includes(path)) retval = key; });
-    return(retval);
-  }
-
-  function digestDeletePath(digest, path) {
-    Object.keys(digest).forEach(key => { delete digest[key][path]});
   }
    
   return(plugin);
