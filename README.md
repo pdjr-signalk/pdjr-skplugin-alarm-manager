@@ -15,7 +15,7 @@ discussions on
 and
 [Alarm, Alert, and Notification Handling](https://github.com/SignalK/specification/blob/master/gitbook-docs/notifications.md).
 
-__pdjr-skplugin-alarm-manager__ generates three types of outputs in
+__pdjr-skplugin-alarm-manager__ generates three types of output in
 response to an alarm condition.
 
 Firstly, it reponds to the requirements of the Signal K specification
@@ -24,20 +24,17 @@ will raise a notification on 'notifications.*key*' whenever the value
 of *key* enters an alarm zone defined in *key*'s metadata.
 
 Secondly, the plugin maintains a digest of current alarm notifications.
-The digest is a JSON object whose property names are notified *key*
-values and whose property values are the current notification state of
-the associated *key*.
+The digest is a JSON object whose properties are notified *key*s with
+values equivalent to their associated notification.
 This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
 Thirdly, the plugin operates zero or more user-defined switch or
-notification outputs in response to the system's aggregate alarm
-state.
-In this context the system alarm state is 'alert' if any individual
-alarm is in an 'alert' state and similarly for each possible
-notification state.
-This allows, for example, the operation of various types of physical
-annunciator.
+notification outputs dependent upon the alarm states present in the
+digest.
+This allows, for example, the operation of an indicator when a warning
+or alert state is present and an audible alarm when an alarm or
+emergency state is present.
 
 ## Configuration
 
@@ -51,7 +48,7 @@ The plugin configuration has the following properties.
 
 *ignorepaths* has an internal default of:
 ```
-[ "design.", "electrical.", "environment.", "network.", "notifications.", "plugins", "sensors." ]
+[ "design.", "electrical.", "network.", "notifications.", "plugins" ]
 ```
 
 Each *output* object has the following properties.
