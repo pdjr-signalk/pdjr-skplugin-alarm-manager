@@ -84,7 +84,6 @@ module.exports = function (app) {
           if (availableAlarmPaths.length != numberOfAvailableAlarmPaths) {
             numberOfAvailableAlarmPaths = availableAlarmPaths.length;
             if (unsubscribes) { unsubscribes.forEach(f => f()); unsubscribes = []; }
-            log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
             startAlarmMonitoring(availableAlarmPaths);
           }
         }
@@ -92,6 +91,7 @@ module.exports = function (app) {
     });
 
     function startAlarmMonitoring(availableAlarmPaths) {
+      log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
       availableAlarmPaths.forEach(path => {
         var meta = app.getSelfPath(path + ".meta");
         let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
