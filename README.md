@@ -41,16 +41,14 @@ emergency state is present.
 The plugin configuration has the following properties.
 
 <table>
-<tr><th>Property&nbsp;name</th><th>Value&nbsp;type</th><th>Value&nbsp;default</th><th>Description</th></tr>
+<tr><th>Property&nbsp;name</th><th>Value&nbsp;default</th><th>Description</th></tr>
 <tr>
 <td>digestpath</td>
-<td>string</td>
 <td><pre>'plugins.alarm-manager.digest'</pre></td>
 <td>Signal K path to the alarm notification digest.</td>
 </tr>
 <tr>
 <td>ignorepaths</td>
-<td>[string]</td>
 <td><pre>
 [
   "design.",
@@ -64,27 +62,11 @@ The plugin configuration has the following properties.
 </tr>
 <tr>
 <td>outputs</td>
-<td><pre>
-[
-  {
-    "path": string,
-    "triggerStates": [ string ]
-  }
-]
-</pre></td>
 <td><pre>[]</pre></td>
 <td>Collection of *output* objects.</td>
 </tr>
 <tr>
 <td>defaultMethods</td>
-<td><pre>
-{
-  "alertMethod": [string],
-  "warnMethod": [string],
-  "alarmMethod": [string],
-  "emergencyMethod": [string]
-}
-</pre></td>
 <td><pre>
 {
   "alertMethod": [ "visual" ],
