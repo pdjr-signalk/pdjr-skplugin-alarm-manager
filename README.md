@@ -85,7 +85,13 @@ The plugin configuration has the following properties.
   ]
 }
 </pre></td>
-<td></td>
+<td>
+The Signal K specification allows the metadata for every path to
+specify the methods that should be used when raising a particular
+type of alarm for that path.
+These fallback defaults specify what methods should be used if the
+metadata method specification on a path is partial or entirely absent.
+</td>
 </tr>
 </table>
 
