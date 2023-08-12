@@ -69,10 +69,20 @@ The plugin configuration has the following properties.
 <td>defaultMethods</td>
 <td><pre>
 {
-  "alertMethod": [ "visual" ],
-  "warnMethod": [ "visual" ],
-  "alarmMethod": [ "sound", "visual" ],
-  "emergencyMethod": [ "sound", "visual" ]
+  "alertMethod": [
+    "visual"
+  ],
+  "warnMethod": [
+    "visual"
+  ],
+  "alarmMethod": [
+    "sound",
+    "visual"
+  ],
+  "emergencyMethod": [
+    "sound",
+    "visual"
+  ]
 }
 </pre></td>
 <td></td>
