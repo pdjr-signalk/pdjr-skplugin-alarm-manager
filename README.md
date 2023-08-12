@@ -40,25 +40,63 @@ emergency state is present.
 
 The plugin configuration has the following properties.
 
-| Property name | Value type | Value default                  | Description |
-| :------------ | :--------- | :----------------------------- | :---------- |
-| digestpath    | String     | 'plugins.alarm-manager.digest' | Where to maintain the alarm notification digest. |
-| ignorepaths   | Array      | (see below)                    | Collection of prefixes of paths which should not be monitored. |
-| outputs       | Array      | []                             | Collection of *output* objects. |
+<table>
+<tr><th>Property&nbsp;name</th><th>Value&nbsp;type</th><th>Value&nbsp;default</th><th>Description</th></tr>
+<tr>
+<td>digestpath</td>
+<td>string</td>
+<td><pre>'plugins.alarm-manager.digest'</pre></td>
+<td>Signal K path to the alarm notification digest.</td>
+</tr>
+<tr>
+<td>ignorepaths</td>
+<td>[string]</td>
+<td><pre>
+[
+  "design.",
+  "electrical.",
+  "network.",
+  "notifications.",
+  "plugins."
+]
+</pre></td>
+<td>Collection of pathnames or prefixes of pathnames which should not be monitored.</td>
+</tr>
+<tr>
+<td>outputs</td>
+<td><pre>
+[
+  {
+    "path": string,
+    "triggerStates": [ string ]
+  }
+]
+</pre></td>
+<td><pre>[]</pre></td>
+<td>Collection of *output* objects.</td>
+</tr>
+<tr>
+<td>defaultMethods</td>
+<td><pre>
+{
+  "alertMethod": [string],
+  "warnMethod": [string],
+  "alarmMethod": [string],
+  "emergencyMethod": [string]
+}
+</pre></td>
+<td><pre>
+{
+  "alertMethod": [ "visual" ],
+  "warnMethod": [ "visual" ],
+  "alarmMethod": [ "sound", "visual" ],
+  "emergencyMethod": [ "sound", "visual" ]
+}
+</pre></td>
+</tr>
+</table>
 
-*ignorepaths* has an internal default of:
-```
-[ "design.", "electrical.", "network.", "notifications.", "plugins" ]
-```
-
-Each *output* object has the following properties.
-
-| Property name | Value type | Value default | Description |
-| :------------ | :--------- | :------------ | :---------- |
-| path          | String     | (none)        | Switch path or notification path on which to issue summary outputs. |
-| triggerstates | Array      | (none)        | Collection of notification states which trigger this output. |
-
-Each *output* configuration specifies a switch or notification
+Each item in the *output* array specifies a switch or notification
 *path* which will be updated in response to the presence or absence
 of one or more alarm notifications in one of the specified
 *triggerstates*.

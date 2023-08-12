@@ -47,8 +47,42 @@ const PLUGIN_SCHEMA = {
             "items": { "type": "string", "enum": [ "normal", "warn", "alert", "alarm", "emergency" ] }
           }
         }
+      }
+    },
+    "defaultMethods" : {
+      "type": "object",
+      "properties": {
+        "alertMethod" : {
+          "type" : "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "warnMethod" : {
+          "type" : "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alarmMethod" : {
+          "type" : "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "emergencyMethod" : {
+          "type" : "array",
+          "items": {
+            "type": "string"
+          }
+        }
       },
-      "default": []
+      "default": {
+        "alertMethod": [ "visual" ],
+        "warnMethod": [ "visual" ],
+        "alarmMethod": [ "sound", "visual" ],
+        "emergencyMethod": [ "sound", "visual" ]
+      }
     }
   }
 }
@@ -73,14 +107,19 @@ module.exports = function (app) {
     var numberOfAvailablePaths = 0;
     var numberOfAvailableAlarmPaths = 0;
 
+    var createConfiguration = (Object.keys(options).length == 0);
+
     options.digestpath = (options.digestpath || plugin.schema.properties.digestpath.default);
     options.ignorepaths = (options.ignorepaths || plugin.schema.properties.ignorepaths.default);
     options.outputs = (options.outputs || plugin.schema.properties.outputs.default);
+    options.defaultMethods = (options.defaultMethods || plugin.schema.properties.defaultMethods.default );
+    
+    if (createConfiguration) app.savePluginOptions(options, () => { app.debug("saved plugin options") });
 
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
         if (e.data.numberOfAvailablePaths != numberOfAvailablePaths) {
-          var availableAlarmPaths = getAvailableAlarmPaths(app, options.ignorepaths);
+          var availableAlarmPaths = getAvailableAlarmPaths(app, options.defaultMethods, options.ignorepaths);
           if (availableAlarmPaths.length != numberOfAvailableAlarmPaths) {
             numberOfAvailableAlarmPaths = availableAlarmPaths.length;
             if (unsubscribes) { unsubscribes.forEach(f => f()); unsubscribes = []; }
@@ -204,12 +243,20 @@ module.exports = function (app) {
    * array.
    */
 
-  function getAvailableAlarmPaths(app, ignore=[]) {
+  function getAvailableAlarmPaths(app, defaultMethods, ignore=[]) {
     var retval = app.streambundle.getAvailablePaths()
       .filter(p => (!(ignore.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
       .filter(p => {
         var meta = app.getSelfPath(p + ".meta");
-        return((meta) && (meta.zones) && (meta.zones.length > 0));
+        if ((meta) && (meta.zones) && (meta.zones.length > 0)) {
+          meta.alertMethod = (meta.alertMethod || defaultMethods.alertMethod);
+          meta.warnMethod = (meta.warnMethod || defaultMethods.warnMethod);
+          meta.alarmMethod = (meta.alarmMethod || defaultMethods.alarmMethod);
+          meta.emergencyMethod = (meta.emergencyMethod || defaultMethods.emergencyMethod);
+          return(true);
+        } else {
+          return(false);
+        }
       });
     return(retval);
   }
