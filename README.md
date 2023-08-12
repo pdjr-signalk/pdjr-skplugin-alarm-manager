@@ -93,6 +93,7 @@ The plugin configuration has the following properties.
   "emergencyMethod": [ "sound", "visual" ]
 }
 </pre></td>
+<td></td>
 </tr>
 </table>
 
