@@ -43,12 +43,12 @@ The plugin configuration has the following properties.
 <table>
 <tr><th>Property&nbsp;name</th><th>Value&nbsp;default</th><th>Description</th></tr>
 <tr>
-<td>digestpath</td>
+<td>digestPath</td>
 <td><pre>'plugins.alarm-manager.digest'</pre></td>
 <td>Signal K path to the alarm notification digest.</td>
 </tr>
 <tr>
-<td>ignorepaths</td>
+<td>ignorePaths</td>
 <td><pre>
 [
   "design.",
@@ -124,8 +124,8 @@ which are in turn connected to visual and audible annunciators.
   "enableDebug": false,
   "configuration": {
     "outputs": [
-      { "path": "electrical.switches.bank.usb0.1", "triggerstates": [ "warn", "alert", "alarm", "emergency" ] },
-      { "path": "electrical.switches.bank.usb0.2", "triggerstates": [ "alarm", "emergency" ] }
+      { "path": "electrical.switches.bank.usb0.1", "triggerStates": [ "warn", "alert", "alarm", "emergency" ] },
+      { "path": "electrical.switches.bank.usb0.2", "triggerStates": [ "alarm", "emergency" ] }
     ]
   }
 }
