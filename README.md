@@ -63,7 +63,7 @@ The plugin configuration has the following properties.
 <tr>
 <td>outputs</td>
 <td><pre>[]</pre></td>
-<td>Collection of *output* objects.</td>
+<td>Collection of *output* objects (see below).</td>
 </tr>
 <tr>
 <td>defaultMethods</td>
@@ -95,10 +95,25 @@ metadata method specification on a path is partial or entirely absent.
 </tr>
 </table>
 
+Each *output* object has the following properties.
+<table>
+<tr><th>Property&nbsp;name</th><th>Value&nbsp;default</th><th>Description</th></tr>
+<tr>
+<td>path</td>
+<td>(none)</td>
+<td>Switch or notification path.</td>
+</tr>
+<tr>
+<td>triggerStates</td>
+<td>(none)</td>
+<td>Array of alarm states.</td>
+</tr>
+</table>
+
 Each item in the *output* array specifies a switch or notification
 *path* which will be updated in response to the presence or absence
 of one or more alarm notifications in one of the specified
-*triggerstates*.
+*triggerStates*.
 
 The configuration I use on my boat uses two outputs that operate relays
 which are in turn connected to visual and audible annunciators.
