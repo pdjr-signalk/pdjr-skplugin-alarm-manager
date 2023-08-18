@@ -95,6 +95,7 @@ const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency
 module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
+  var resistantUnsubscribes = [];
   var notificationDigest = { };
 
   plugin.id = PLUGIN_ID;
@@ -123,7 +124,7 @@ module.exports = function (app) {
       options.outputs.forEach(output => {
         output.id = (++id);
         var stream = app.streambundle.getSelfStream(output.suppressionPath);
-        unsubscribes.push(stream.skipDuplicates().onValue(v => {
+        resistantUnsubscribes.push(stream.skipDuplicates().onValue(v => {
           if (v == 1) {
             Object.keys(notificationDigest).forEach(key => {
               if (!notificationDigest[key].suppressedOutputs.includes(output.id)) notificationDigest[key].suppressedOutputs.push(output.id);
@@ -221,6 +222,8 @@ module.exports = function (app) {
   plugin.stop = function() {
 	  unsubscribes.forEach(f => f());
     unsubscribes = [];
+	  resistantUnsubscribes.forEach(f => f());
+    resistantUnsubscribes = [];
   }
 
   /********************************************************************
