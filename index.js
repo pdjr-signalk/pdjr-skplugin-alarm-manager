@@ -45,8 +45,10 @@ const PLUGIN_SCHEMA = {
           "triggerstates": {
             "type": "array",
             "items": { "type": "string", "enum": [ "normal", "warn", "alert", "alarm", "emergency" ] }
-          }
-        }
+          },
+          "suppressionPath": { "type": "string" }
+        },
+        "required" : [ "path", "triggerstates" ]
       }
     },
     "defaultMethods" : {
@@ -116,6 +118,21 @@ module.exports = function (app) {
     
     if (createConfiguration) app.savePluginOptions(options, () => { app.debug("saved plugin options") });
 
+    if (options.outputs) {
+      var id = 0;
+      options.outputs.forEach(output => {
+        output.id = (++id);
+        var stream = app.streambundle.getSelfStream(output.suppressionPath);
+        unsubscribes.push(stream.skipDuplicates().onValue(v => {
+          if (v == 1) {
+            Object.keys(notificationDigest).forEach(key => {
+              if (!notificationDigest[key].suppressedOutputs.includes(output.id)) notificationDigest[key].suppressedOutputs.push(output.id);
+            })     
+          }
+        }));
+      });
+    }
+
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
         if (e.data.numberOfAvailablePaths != numberOfAvailablePaths) {
@@ -140,9 +157,9 @@ module.exports = function (app) {
           var updated = false;
           var notification = getAlarmNotification(v, zones);
           if (notification) { // Value is alarming...
-            if ((!notificationDigest[path]) || (notificationDigest[path].state != notification.state)) {
+            if ((!notificationDigest[path]) || (notificationDigest[path].notification.state != notification.state)) {
               app.debug("issuing notification on '%s'", path);
-              notificationDigest[path] = notification;
+              notificationDigest[path] = { "notification": notification, "suppressedOutputs": [] };
               (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
               updated = true;
             }
@@ -156,14 +173,12 @@ module.exports = function (app) {
           }
           if (updated) {
             (new Delta(app, plugin.id)).addValue(options.digestpath, notificationDigest).commit().clear();
-            var currentDigestStates = Object.keys(notificationDigest).map(key => notificationDigest[key].state); 
             if (options.outputs) {
               options.outputs.forEach(output => {
-                try {
-                  updateOutput(output, (((output.triggerstates.filter(state => currentDigestStates.includes(state))).length > 0)?1:0));
-                } catch(e) {
-                  log.E("bad output path '%s'", e.message, false);
-                }
+                var currentDigestStates = Object.keys(notificationDigest)
+                .filter(key => !notificationDigest[key].suppressedOutputs.includes(output.id))
+                .map(key => notificationDigest[key].notification.state);
+                updateOutput(output, (output.triggerstates.filter(state => currentDigestStates.includes(state)).length > 0)?1:0);
               });
             }
           }
@@ -204,10 +219,8 @@ module.exports = function (app) {
   }
 
   plugin.stop = function() {
-	  if (unsubscribes) {
-      unsubscribes.forEach(f => f());
-      unsubscribes = [];
-    }
+	  unsubscribes.forEach(f => f());
+    unsubscribes = [];
   }
 
   /********************************************************************

@@ -29,12 +29,15 @@ values equivalent to their associated notification.
 This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
-Thirdly, the plugin operates zero or more user-defined switch or
-notification outputs dependent upon the alarm states present in the
-digest.
+Thirdly, the plugin operates zero or more user-defined, suppressable,
+switch or notification outputs dependent upon the alarm states present
+in the digest.
 This allows, for example, the operation of an indicator when a warning
 or alert state is present and an audible alarm when an alarm or
 emergency state is present.
+Each output can be suppressed by the appearance of a transient true
+value on an associated key allowing the easy implementation of a
+'silence alarm' function. 
 
 ## Configuration
 
