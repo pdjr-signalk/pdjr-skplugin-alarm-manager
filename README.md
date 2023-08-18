@@ -35,9 +35,9 @@ in the digest.
 This allows, for example, the operation of an indicator when a warning
 or alert state is present and an audible alarm when an alarm or
 emergency state is present.
-Each output can be suppressed by the appearance of a transient true
-value on an associated key allowing the easy implementation of a
-'silence alarm' function. 
+Outputs can be individually suppressed by the appearance of a transient
+true value on a specified key allowing the easy implementation of a
+'silence alarm' function.
 
 ## Configuration
 
@@ -104,12 +104,26 @@ Each *output* object has the following properties.
 <tr>
 <td>path</td>
 <td>(none)</td>
-<td>Switch or notification path.</td>
+<td>
+Switch or notification path.
+Required.
+</td>
 </tr>
 <tr>
 <td>triggerStates</td>
 <td>(none)</td>
-<td>Array of alarm states.</td>
+<td>
+Array of alarm states which will trigger this output.
+Required.
+</td>
+</tr>
+<tr>
+<td>suppressionPath</td>
+<td>(none)</td>
+<td>
+Path signalling suppression of this output.
+Optional.
+</td>
 </tr>
 </table>
 
@@ -118,8 +132,16 @@ Each item in the *output* array specifies a switch or notification
 of one or more alarm notifications in one of the specified
 *triggerStates*.
 
+A momentary true value on *suppressionPath* will suppress output
+deriving from the current notification state, but output will be
+restored if a notification changes state to another value in
+*triggerStates* or a new notification appears with a state in
+*triggerStates*.
+
 The configuration I use on my boat uses two outputs that operate relays
-which are in turn connected to visual and audible annunciators.
+which are in turn connected to visual (usb0.1) and audible (usb0.2)
+annunciators.
+A momentary switch allows suppression of the audible output.
 ```
 {
   "enabled": true,
@@ -127,8 +149,15 @@ which are in turn connected to visual and audible annunciators.
   "enableDebug": false,
   "configuration": {
     "outputs": [
-      { "path": "electrical.switches.bank.usb0.1", "triggerStates": [ "warn", "alert", "alarm", "emergency" ] },
-      { "path": "electrical.switches.bank.usb0.2", "triggerStates": [ "alarm", "emergency" ] }
+      {
+        "path": "electrical.switches.bank.usb0.1",
+        "triggerStates": [ "warn", "alert", "alarm", "emergency" ]
+      },
+      {
+        "path": "electrical.switches.bank.usb0.2",
+        "triggerStates": [ "alarm", "emergency" ],
+        "suppressionPath": "electrical.switches.bank.0.12.state"
+      }
     ]
   }
 }
