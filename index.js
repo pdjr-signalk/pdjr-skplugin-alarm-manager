@@ -41,6 +41,7 @@ const PLUGIN_SCHEMA = {
       "items": {
         "type": "object",
         "properties": {
+          "name": { "type": "string" },
           "path": { "type": "string" },
           "triggerstates": {
             "type": "array",
@@ -48,7 +49,8 @@ const PLUGIN_SCHEMA = {
           },
           "suppressionPath": { "type": "string" }
         },
-        "required" : [ "path", "triggerstates" ]
+        "required" : [ "name", "path", "triggerstates" ],
+        "default": []
       }
     },
     "defaultMethods" : {
@@ -110,18 +112,16 @@ module.exports = function (app) {
     var numberOfAvailablePaths = 0;
     var numberOfAvailableAlarmPaths = 0;
 
-    var createConfiguration = (Object.keys(options).length == 0);
+    plugin.options = {};
+    plugin.options.digestpath = options.digestpath || plugin.schema.properties.digestpath.default;
+    plugin.options.ignorepaths = options.ignorepaths || plugin.schema.properties.ignorepaths.default;
+    plugin.options.outputs = options.outputs || plugin.schema.properties.outputs.default;
+    plugin.options.defaultMethods = options.defaultMethods || plugin.schema.properties.defaultMethods.default;
+    app.savePluginOptions(plugin.options, () => { app.debug("saved plugin options") });
 
-    options.digestpath = (options.digestpath || plugin.schema.properties.digestpath.default);
-    options.ignorepaths = (options.ignorepaths || plugin.schema.properties.ignorepaths.default);
-    options.outputs = (options.outputs || plugin.schema.properties.outputs.default);
-    options.defaultMethods = (options.defaultMethods || plugin.schema.properties.defaultMethods.default );
-    
-    if (createConfiguration) app.savePluginOptions(options, () => { app.debug("saved plugin options") });
-
-    if (options.outputs) {
+    if (plugin.options.outputs) {
       var id = 0;
-      options.outputs.forEach(output => {
+      plugin.options.outputs.forEach(output => {
         output.id = (++id);
         var stream = app.streambundle.getSelfStream(output.suppressionPath);
         resistantUnsubscribes.push(stream.skipDuplicates().onValue(v => {
@@ -137,7 +137,7 @@ module.exports = function (app) {
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
         if (e.data.numberOfAvailablePaths != numberOfAvailablePaths) {
-          var availableAlarmPaths = getAvailableAlarmPaths(app, options.defaultMethods, options.ignorepaths);
+          var availableAlarmPaths = getAvailableAlarmPaths(app, plugin.options.defaultMethods, plugin.options.ignorepaths);
           if (availableAlarmPaths.length != numberOfAvailableAlarmPaths) {
             numberOfAvailableAlarmPaths = availableAlarmPaths.length;
             if (unsubscribes) { unsubscribes.forEach(f => f()); unsubscribes = []; }
@@ -174,8 +174,8 @@ module.exports = function (app) {
           }
           if (updated) {
             (new Delta(app, plugin.id)).addValue(options.digestpath, notificationDigest).commit().clear();
-            if (options.outputs) {
-              options.outputs.forEach(output => {
+            if (plugin.options.outputs) {
+              plugin.options.outputs.forEach(output => {
                 var currentDigestStates = Object.keys(notificationDigest)
                 .filter(key => !notificationDigest[key].suppressedOutputs.includes(output.id))
                 .map(key => notificationDigest[key].notification.state);
@@ -226,6 +226,16 @@ module.exports = function (app) {
     resistantUnsubscribes = [];
   }
 
+  plugin.registerWithRouter = function(router) {
+    router.get('/digest/', expressGetDigest);
+    router.get('/outputs/', expressGetOutputs);
+    router.get('/outputs/:name', expressGetOutput);
+    router.patch('/suppress/:name', expressSuppressOutput)
+  }
+
+  plugin.getOpenApi = function() { require("./resources/openApi.json"); }
+
+
   /********************************************************************
    * Returns a well formed notification object or null dependent upon
    * whether or not <value> is captured by a rule in the <zones> array.
@@ -275,6 +285,22 @@ module.exports = function (app) {
         }
       });
     return(retval);
+  }
+
+  function expressGetDigest(req, res) {
+
+  }
+
+  function expressGetOutputs(req, res) {
+
+  }
+
+  function expressGetOutput(req, res) {
+
+  }
+
+  function expressSuppressOutput(req, res) {
+    
   }
    
   return(plugin);

@@ -1,0 +1,175 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "HTTP API for pdjr-skplugin-alarm-manager",
+    "version": "1.0.0",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "description": "[pdjr-skplugin-alarm-manager](https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager)\nis a plugin for the\n[Signal K node server](https://github.com/SignalK/signalk-server).\n\nA Signal K server hosting the plugin will present this API under\nthe root https://*server_ip*:*server_port*/plugins/alarm-manager.\n"
+  },
+  "externalDocs": {
+    "description": "Plugin README document",
+    "url": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme"
+  },
+  "paths": {
+    "/digest": {
+      "get": {
+        "description": "Get a list of all active alarm notifications.\n",
+        "responses": {
+          "200": {
+            "description": "Success.\nThe response body is an array of alarm notification objects.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/notification-list"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error.\nThe server was unable to service the request.\n"
+          }
+        }
+      }
+    },
+    "/outputs": {
+      "get": {
+        "description": "Get a list of configured outputs which includes their current state.\n",
+        "responses": {
+          "200": {
+            "description": "Success.\nThe response body is an array of current state objects.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/output-list"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error.\nThe server was unable to service the request.\n"
+          }
+        }
+      }
+    },
+    "/outputs/{name}": {
+      "get": {
+        "description": "Get the current state of the output specified by {name}.\n",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Identifier of the output channel whose state is required.\n",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/output-name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.\nThe response body contains the value 1 to indicate that\nthe output is ON, or 0 to indicate that the output is OFF.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/output-state"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error.\nThe request was invalid (bad or missing output {name}).\n"
+          },
+          "500": {
+            "description": "Error.\nThe server was unable to service the request.\n"
+          }
+        }
+      }
+    },
+    "/suppress/{name}": {
+      "patch": {
+        "description": "Suppress output on output channel {name}.\n",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Identifier of the output channel which should be suppressed.\n",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/output-name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.\nOutput channel {name} has been suppressed.\n"
+          },
+          "404": {
+            "description": "Error.\nThe request was invalid (bad or missing output {name}).\n"
+          },
+          "500": {
+            "description": "Error.\nThe server was unable to service the request.\n"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "output-name": {
+        "description": "Name of an alarm output channel as defined in the alarm-manager\nconfiguration.\n",
+        "example": "annunciator",
+        "type": "string"
+      },
+      "output-state": {
+        "description": "Integer representation of the state of an alarm output channel.\n0 says OFF, 1 says ON.\n",
+        "example": 0,
+        "type": "number"
+      },
+      "output-list": {
+        "description": "Summary of the state of all alarm output channels.\n",
+        "example": [
+          {
+            "name": "beacon",
+            "state": 1,
+            "suppressed": false
+          },
+          {
+            "name": "annunciator",
+            "state": 0,
+            "suppressed": true
+          }
+        ],
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/components/schemas/output-name"
+            },
+            "state": {
+              "$ref": "#/components/schemas/output-state"
+            },
+            "suppressed": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "notification-list": {
+        "description": "Array containing a sorted list of active Signal K alarm notifications.",
+        "example": [
+          {
+            "tanks.wasteWater.0.currentLevel": null
+          }
+        ],
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/output-name"
+        }
+      }
+    }
+  }
+}

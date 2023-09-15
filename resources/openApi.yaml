@@ -1,0 +1,144 @@
+openapi: 3.0.0
+info:
+  title: HTTP API for pdjr-skplugin-alarm-manager
+  version: 1.0.0
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  description: |
+    [pdjr-skplugin-alarm-manager](https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager)
+    is a plugin for the
+    [Signal K node server](https://github.com/SignalK/signalk-server).
+
+    A Signal K server hosting the plugin will present this API under
+    the root https://*server_ip*:*server_port*/plugins/alarm-manager.
+externalDocs:
+  description: Plugin README document
+  url: https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme 
+paths:
+  /digest:
+    get:
+      description: |
+        Get a list of all active alarm notifications.
+      responses:
+        200:
+          description: |
+            Success.
+            The response body is an array of alarm notification objects.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/notification-list"
+        500:
+          description: |
+            Error.
+            The server was unable to service the request.
+  /outputs:
+    get:
+      description: |
+        Get a list of configured outputs which includes their current state.
+      responses:
+        200:
+          description: |
+            Success.
+            The response body is an array of current state objects.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/output-list"
+        500:
+          description: |
+            Error.
+            The server was unable to service the request.
+  /outputs/{name}:
+    get:
+      description: |
+        Get the current state of the output specified by {name}.
+      parameters:
+      - name: name
+        in: path
+        description: |
+          Identifier of the output channel whose state is required.
+        required: true
+        schema:
+          $ref: "#/components/schemas/output-name"
+      responses:
+        200:
+          description: |
+            Success.
+            The response body contains the value 1 to indicate that
+            the output is ON, or 0 to indicate that the output is OFF.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/output-state"
+        404:
+          description: |
+            Error.
+            The request was invalid (bad or missing output {name}).
+        500:
+          description: |
+            Error.
+            The server was unable to service the request.
+  /suppress/{name}:
+    patch:
+      description: |
+        Suppress output on output channel {name}.
+      parameters:
+      - name: name
+        in: path
+        description: |
+          Identifier of the output channel which should be suppressed.
+        required: true
+        schema:
+          $ref: "#/components/schemas/output-name"
+      responses:
+        200:
+          description: |
+            Success.
+            Output channel {name} has been suppressed.
+        404:
+          description: |
+            Error.
+            The request was invalid (bad or missing output {name}).
+        500:
+          description: |
+            Error.
+            The server was unable to service the request.
+components:
+  schemas:
+    output-name:
+      description: |
+        Name of an alarm output channel as defined in the alarm-manager
+        configuration.
+      example: "annunciator"
+      type: string
+    output-state:
+      description: |
+        Integer representation of the state of an alarm output channel.
+        0 says OFF, 1 says ON.
+      example:
+        0
+      type: number
+    output-list:
+      description: |
+        Summary of the state of all alarm output channels.
+      example:
+        [ { "name": "beacon", "state": 1, "suppressed": false }, { "name" : "annunciator", "state": 0, "suppressed": true } ]
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            $ref: "#/components/schemas/output-name"
+          state:
+            $ref: "#/components/schemas/output-state"
+          suppressed:
+            type: boolean
+    notification-list:
+      description: Array containing a sorted list of active Signal K alarm notifications.
+      example: [ { "tanks.wasteWater.0.currentLevel" } ]
+      type: array
+      items: 
+        $ref: "#/components/schemas/output-name"
+  
