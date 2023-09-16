@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.3",
   "info": {
     "title": "HTTP API for pdjr-skplugin-alarm-manager",
     "version": "1.0.0",
@@ -126,53 +126,51 @@
       "state": {
         "description": "State of an alarm output channel expressed as an integer where\n0 says OFF, 1 says ON.\n",
         "example": 0,
-        "type": "number"
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
       },
       "outputs": {
-        "description": "Object summarising the state of all alarm outputs.\n",
+        "description": "Object summarising the state of all alarm outputs.\nEach property name is the name of a configured output channel\nwith a value indication the channel state.\n",
         "example": {
           "beacon": 1,
           "annunciator": 0
         },
         "type": "object",
-        "properties": {
-          "output_name": {
-            "$ref": "#/components/schemas/state"
-          }
+        "additionalProperties": {
+          "$ref": "#/components/schemas/state"
         }
       },
       "digest": {
-        "description": "Object containing a collection of active alarm notifications\nunder plugin control.\n",
+        "description": "Object containing a collection of active alarm notifications\nunder plugin control.\nEach property name is a Signal K key on which an alarm\nnotification has been raised and to which the associated\nproperty value relates.\n",
         "type": "object",
-        "properties": {
-          "notification_path": {
-            "type": "object",
-            "properties": {
-              "notification": {
-                "properties": {
-                  "state": {
-                    "type": "string",
-                    "description": "Alarm state of the notification."
-                  },
-                  "method": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "message": {
-                    "type": "string"
-                  },
-                  "id": {
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "notification": {
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "description": "Alarm state of the notification."
+                },
+                "method": {
+                  "type": "array",
+                  "items": {
                     "type": "string"
                   }
+                },
+                "message": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
                 }
-              },
-              "suppressedOutputs": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/name"
-                }
+              }
+            },
+            "suppressedOutputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/name"
               }
             }
           }

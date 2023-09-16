@@ -1,4 +1,4 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: HTTP API for pdjr-skplugin-alarm-manager
   version: 1.0.0
@@ -121,38 +121,43 @@ components:
         0 says OFF, 1 says ON.
       example: 0
       type: number
+      minimum: 0
+      maximum: 1
     outputs:
       description: |
         Object summarising the state of all alarm outputs.
+        Each property name is the name of a configured output channel
+        with a value indication the channel state.
       example:
         { "beacon": 1, "annunciator": 0 }
       type: object
-      properties:
-        output_name:
-          $ref: "#/components/schemas/state"
+      additionalProperties:
+        $ref: "#/components/schemas/state"
     digest:
       description: |
         Object containing a collection of active alarm notifications
         under plugin control.
+        Each property name is a Signal K key on which an alarm
+        notification has been raised and to which the associated
+        property value relates.
       type: object
-      properties:
-        notification_path:
-          type: object
-          properties:
-            notification: 
-              properties:
-                state:
+      additionalProperties:
+        type: object
+        properties:
+          notification: 
+            properties:
+              state:
+                type: string
+                description: Alarm state of the notification.
+              method:
+                type: array
+                items:
                   type: string
-                  description: Alarm state of the notification.
-                method:
-                  type: array
-                  items:
-                    type: string
-                message:
-                  type: string
-                id:
-                  type: string
-            suppressedOutputs:
-              type: array
-              items:
-                $ref: "#/components/schemas/name"
+              message:
+                type: string
+              id:
+                type: string
+          suppressedOutputs:
+            type: array
+            items:
+              $ref: "#/components/schemas/name"
