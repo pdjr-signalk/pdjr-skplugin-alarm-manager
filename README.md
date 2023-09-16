@@ -12,7 +12,7 @@ The plugin provides three distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
 by issuing alarm notifications: thus, an alarm triggered by a value
-on *key* will raise a notification on 'notifications.*key*' whenever
+on '*key*' will raise a notification on 'notifications.*key*' whenever
 the value of *key* enters an alarm zone defined in *key*'s metadata.
 
 Secondly, the plugin maintains a digest of current alarm notifications.
