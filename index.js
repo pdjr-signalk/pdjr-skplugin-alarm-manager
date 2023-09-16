@@ -23,18 +23,18 @@ const PLUGIN_DESCRIPTION = "Issue notification and other outputs in response to 
 const PLUGIN_SCHEMA = {
   "type": "object",
   "properties": {
-    "digestPath": {
-      "title": "Digest path",
-      "description": "Signal K key that will hold the alarm notification digest",
-      "type": "string",
-      "default": "plugins.alarm-manager.digest"
-    },
     "ignorePaths": {
       "title": "Ignore paths",
       "description": "Paths or path prefixes that should be ignored by the alarm manager",
       "type": "array",
       "items": { "type": "string" },
       "default": [ "design.", "electrical.", "environment.", "network.", "notifications.", "plugins.", "sensors." ]
+    },
+    "digestPath": {
+      "title": "Digest path",
+      "description": "Signal K key that will hold the alarm notification digest",
+      "type": "string",
+      "default": "plugins.alarm-manager.digest"
     },
     "outputs": {
       "title": "Output channels",
@@ -72,6 +72,8 @@ const PLUGIN_SCHEMA = {
       }
     },
     "defaultMethods" : {
+      "title": "Default methods",
+      "description": "The notification methods to use if none are specified in key metadata",
       "type": "object",
       "properties": {
         "alertMethod" : {
