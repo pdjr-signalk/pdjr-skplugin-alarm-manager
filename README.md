@@ -11,9 +11,9 @@ enter the alarm zones defined by key metadata.
 The plugin provides three distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
-by issuing alarm notifications: thus, an alarm triggered by a value
-on '*key*' will raise a notification on 'notifications.*key*' whenever
-the value of *key* enters an alarm zone defined in *key*'s metadata.
+by issuing alarm notifications: thus, a value on '*key*' will raise a
+notification on 'notifications.*key*' whenever the value of *key* enters
+an alarm zone defined in *key*'s metadata.
 
 Secondly, the plugin maintains a digest of current alarm notifications.
 The digest is a JSON object whose properties are notified *key*s with
@@ -22,8 +22,8 @@ This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
 Thirdly, the plugin operates zero or more user-defined, suppressable,
-switch or notification outputs with values dependent upon the collated
-alarm states of notifications in the digest.
+switch or notification outputs with values dependent upon the
+consolidated alarm states of notifications in the digest.
 Outputs can be individually suppressed by the appearance of a transient
 true value on a specified key allowing the easy implementation of a
 'silence alarm' function.
