@@ -6,8 +6,8 @@ conditions.
 ## Description
 
 __pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
-issuing alarm notifications contingent upon the alarm configuration
-properties embedded in the meta values associated with monitored keys.
+issuing alarm notifications when Signal K key values enter alarm zones
+defined by metadata values associated with each keys.
 
 The design of the plugin acknowledges the Signal K specification
 discussions on 
@@ -19,9 +19,9 @@ __pdjr-skplugin-alarm-manager__ generates three types of output in
 response to an alarm condition.
 
 Firstly, it reponds to the requirements of the Signal K specification
-by issuing notifications: thus, an alarm triggered by a value on *key*
-will raise a notification on 'notifications.*key*' whenever the value
-of *key* enters an alarm zone defined in *key*'s metadata.
+by issuing alarm notifications: thus, an alarm triggered by a value
+on *key* will raise a notification on 'notifications.*key*' whenever
+the value of *key* enters an alarm zone defined in *key*'s metadata.
 
 Secondly, the plugin maintains a digest of current alarm notifications.
 The digest is a JSON object whose properties are notified *key*s with
