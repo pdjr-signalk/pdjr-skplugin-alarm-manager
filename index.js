@@ -231,11 +231,11 @@ module.exports = function (app) {
     }
 
     function updateOutput(output, state) {
-      app.debug("updating output '%s' to state %d", output.name, state);
 
       var matches;
       if ((matches = output.path.match(/^switches\.(.*)\.state$/)) && (matches == 2)) {
         if (output.lastUpdateState != state) {
+          app.debug("updating switch output '%s' to state %d", output.name, state);
           app.putSelfPath(path, state);
           output.lastUpdateState = state;
         }
@@ -254,6 +254,7 @@ module.exports = function (app) {
       } else if ((matches = output.path.match(/^notifications\.(.*)$/)) && (matches.length == 2)) {
         notificationState = (state)?'normal':null;
         if (output.lastUpdateState != state) {
+          app.debug("updating switch output '%s' to state %d", output.name, state);
           (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': notificationState, 'method': [] }:null).commit().clear();
           output.lastUpdateState = state;
         }
