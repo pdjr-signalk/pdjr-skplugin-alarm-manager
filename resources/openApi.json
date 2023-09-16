@@ -39,7 +39,7 @@
         "description": "Get the state of all configured outputs.\n",
         "responses": {
           "200": {
-            "description": "Success.\nThe response body is an object containing the state of all alarm outputs.\n",
+            "description": "Success.\nThe response body is an object with the names of alarm\noutput channels as property names and the current channel\nstate a the property value.\n",
             "content": {
               "application/json": {
                 "schema": {
