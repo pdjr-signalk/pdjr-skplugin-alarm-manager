@@ -19,16 +19,18 @@ paths:
   /digest:
     get:
       description: |
-        Get a list of all active alarm notifications.
+        Get a digest of all active alarm notifications.
       responses:
         200:
           description: |
             Success.
-            The response body is an array of alarm notification objects.
+            The response body is an object with the paths of alarm
+            notifications as property names and property values which
+            include notification and suppression details.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/notification-list"
+                $ref: "#/components/schemas/digest"
         500:
           description: |
             Error.
@@ -36,16 +38,16 @@ paths:
   /outputs:
     get:
       description: |
-        Get a list of configured outputs which includes their current state.
+        Get the state of all configured outputs.
       responses:
         200:
           description: |
             Success.
-            The response body is an array of current state objects.
+            The response body is an object containing the state of all alarm outputs.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/output-list"
+                $ref: "#/components/schemas/outputs"
         500:
           description: |
             Error.
@@ -61,7 +63,7 @@ paths:
           Identifier of the output channel whose state is required.
         required: true
         schema:
-          $ref: "#/components/schemas/output-name"
+          $ref: "#/components/schemas/name"
       responses:
         200:
           description: |
@@ -71,7 +73,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/output-state"
+                $ref: "#/components/schemas/state"
         404:
           description: |
             Error.
@@ -91,7 +93,7 @@ paths:
           Identifier of the output channel which should be suppressed.
         required: true
         schema:
-          $ref: "#/components/schemas/output-name"
+          $ref: "#/components/schemas/name"
       responses:
         200:
           description: |
@@ -107,38 +109,50 @@ paths:
             The server was unable to service the request.
 components:
   schemas:
-    output-name:
+    name:
       description: |
         Name of an alarm output channel as defined in the alarm-manager
         configuration.
       example: "annunciator"
       type: string
-    output-state:
+    state:
       description: |
-        Integer representation of the state of an alarm output channel.
+        State of an alarm output channel expressed as an integer where
         0 says OFF, 1 says ON.
-      example:
-        0
+      example: 0
       type: number
-    output-list:
+    outputs:
       description: |
-        Summary of the state of all alarm output channels.
+        Object summarising the state of all alarm outputs.
       example:
-        [ { "name": "beacon", "state": 1, "suppressed": false }, { "name" : "annunciator", "state": 0, "suppressed": true } ]
-      type: array
-      items:
-        type: object
-        properties:
-          name:
-            $ref: "#/components/schemas/output-name"
-          state:
-            $ref: "#/components/schemas/output-state"
-          suppressed:
-            type: boolean
-    notification-list:
-      description: Array containing a sorted list of active Signal K alarm notifications.
-      example: [ { "tanks.wasteWater.0.currentLevel" } ]
-      type: array
-      items: 
-        $ref: "#/components/schemas/output-name"
-  
+        { "beacon": 1, "annunciator": 0 }
+      type: object
+      properties:
+        output_name:
+          $ref: "#/components/schemas/state"
+    digest:
+      description: |
+        Object containing a collection of active alarm notifications
+        under plugin control.
+      type: object
+      properties:
+        notification_path:
+          type: object
+          properties:
+            notification: 
+              properties:
+                state:
+                  type: string
+                  description: Alarm state of the notification.
+                method:
+                  type: array
+                  items:
+                    type: string
+                message:
+                  type: string
+                id:
+                  type: string
+            suppressedOutputs:
+              type: array
+              items:
+                $ref: "#/components/schemas/name"

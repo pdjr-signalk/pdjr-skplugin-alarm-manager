@@ -16,14 +16,14 @@
   "paths": {
     "/digest": {
       "get": {
-        "description": "Get a list of all active alarm notifications.\n",
+        "description": "Get a digest of all active alarm notifications.\n",
         "responses": {
           "200": {
-            "description": "Success.\nThe response body is an array of alarm notification objects.\n",
+            "description": "Success.\nThe response body is an object with the paths of alarm\nnotifications as property names and property values which\ninclude notification and suppression details.\n",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/notification-list"
+                  "$ref": "#/components/schemas/digest"
                 }
               }
             }
@@ -36,14 +36,14 @@
     },
     "/outputs": {
       "get": {
-        "description": "Get a list of configured outputs which includes their current state.\n",
+        "description": "Get the state of all configured outputs.\n",
         "responses": {
           "200": {
-            "description": "Success.\nThe response body is an array of current state objects.\n",
+            "description": "Success.\nThe response body is an object containing the state of all alarm outputs.\n",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/output-list"
+                  "$ref": "#/components/schemas/outputs"
                 }
               }
             }
@@ -64,7 +64,7 @@
             "description": "Identifier of the output channel whose state is required.\n",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/output-name"
+              "$ref": "#/components/schemas/name"
             }
           }
         ],
@@ -74,7 +74,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/output-state"
+                  "$ref": "#/components/schemas/state"
                 }
               }
             }
@@ -98,7 +98,7 @@
             "description": "Identifier of the output channel which should be suppressed.\n",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/output-name"
+              "$ref": "#/components/schemas/name"
             }
           }
         ],
@@ -118,56 +118,64 @@
   },
   "components": {
     "schemas": {
-      "output-name": {
+      "name": {
         "description": "Name of an alarm output channel as defined in the alarm-manager\nconfiguration.\n",
         "example": "annunciator",
         "type": "string"
       },
-      "output-state": {
-        "description": "Integer representation of the state of an alarm output channel.\n0 says OFF, 1 says ON.\n",
+      "state": {
+        "description": "State of an alarm output channel expressed as an integer where\n0 says OFF, 1 says ON.\n",
         "example": 0,
         "type": "number"
       },
-      "output-list": {
-        "description": "Summary of the state of all alarm output channels.\n",
-        "example": [
-          {
-            "name": "beacon",
-            "state": 1,
-            "suppressed": false
-          },
-          {
-            "name": "annunciator",
-            "state": 0,
-            "suppressed": true
-          }
-        ],
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "name": {
-              "$ref": "#/components/schemas/output-name"
-            },
-            "state": {
-              "$ref": "#/components/schemas/output-state"
-            },
-            "suppressed": {
-              "type": "boolean"
-            }
+      "outputs": {
+        "description": "Object summarising the state of all alarm outputs.\n",
+        "example": {
+          "beacon": 1,
+          "annunciator": 0
+        },
+        "type": "object",
+        "properties": {
+          "output_name": {
+            "$ref": "#/components/schemas/state"
           }
         }
       },
-      "notification-list": {
-        "description": "Array containing a sorted list of active Signal K alarm notifications.",
-        "example": [
-          {
-            "tanks.wasteWater.0.currentLevel": null
+      "digest": {
+        "description": "Object containing a collection of active alarm notifications\nunder plugin control.\n",
+        "type": "object",
+        "properties": {
+          "notification_path": {
+            "type": "object",
+            "properties": {
+              "notification": {
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "description": "Alarm state of the notification."
+                  },
+                  "method": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                }
+              },
+              "suppressedOutputs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/name"
+                }
+              }
+            }
           }
-        ],
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/output-name"
         }
       }
     }
