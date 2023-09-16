@@ -39,6 +39,11 @@ Outputs can be individually suppressed by the appearance of a transient
 true value on a specified key allowing the easy implementation of a
 'silence alarm' function.
 
+The plugin exposes an
+[HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarm-manager/)
+and contributes OpenAPI documentation of this interface to the Signal
+K OpenAPI service.
+
 ## Configuration
 
 The plugin configuration has the following properties.

@@ -41,6 +41,7 @@ const PLUGIN_SCHEMA = {
       "items": {
         "type": "object",
         "properties": {
+          "name": { "type": "string" },
           "path": { "type": "string" },
           "triggerstates": {
             "type": "array",
@@ -48,7 +49,8 @@ const PLUGIN_SCHEMA = {
           },
           "suppressionPath": { "type": "string" }
         },
-        "required" : [ "path", "triggerstates" ]
+        "required" : [ "name", "path", "triggerstates" ],
+        "default": []
       }
     },
     "defaultMethods" : {
@@ -92,6 +94,15 @@ const PLUGIN_UISCHEMA = {};
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
 
+const FETCH_RESPONSES = {
+  200: null,
+  201: null,
+  400: "bad request",
+  404: "not found",
+  503: "service unavailable (try again later)",
+  500: "internal server error"
+};
+
 module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
@@ -110,24 +121,20 @@ module.exports = function (app) {
     var numberOfAvailablePaths = 0;
     var numberOfAvailableAlarmPaths = 0;
 
-    var createConfiguration = (Object.keys(options).length == 0);
+    plugin.options = {};
+    plugin.options.digestpath = options.digestpath || plugin.schema.properties.digestpath.default;
+    plugin.options.ignorepaths = options.ignorepaths || plugin.schema.properties.ignorepaths.default;
+    plugin.options.outputs = options.outputs || plugin.schema.properties.outputs.default;
+    plugin.options.defaultMethods = options.defaultMethods || plugin.schema.properties.defaultMethods.default;
+    app.savePluginOptions(plugin.options, () => { app.debug("saved plugin options") });
 
-    options.digestpath = (options.digestpath || plugin.schema.properties.digestpath.default);
-    options.ignorepaths = (options.ignorepaths || plugin.schema.properties.ignorepaths.default);
-    options.outputs = (options.outputs || plugin.schema.properties.outputs.default);
-    options.defaultMethods = (options.defaultMethods || plugin.schema.properties.defaultMethods.default );
-    
-    if (createConfiguration) app.savePluginOptions(options, () => { app.debug("saved plugin options") });
-
-    if (options.outputs) {
-      var id = 0;
-      options.outputs.forEach(output => {
-        output.id = (++id);
+    if (plugin.options.outputs) {
+      plugin.options.outputs.forEach(output => {
         var stream = app.streambundle.getSelfStream(output.suppressionPath);
         resistantUnsubscribes.push(stream.skipDuplicates().onValue(v => {
           if (v == 1) {
             Object.keys(notificationDigest).forEach(key => {
-              if (!notificationDigest[key].suppressedOutputs.includes(output.id)) notificationDigest[key].suppressedOutputs.push(output.id);
+              if (!notificationDigest[key].suppressedOutputs.includes(output.name)) notificationDigest[key].suppressedOutputs.push(output.name);
             })     
           }
         }));
@@ -137,7 +144,7 @@ module.exports = function (app) {
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
         if (e.data.numberOfAvailablePaths != numberOfAvailablePaths) {
-          var availableAlarmPaths = getAvailableAlarmPaths(app, options.defaultMethods, options.ignorepaths);
+          var availableAlarmPaths = getAvailableAlarmPaths(app, plugin.options.defaultMethods, plugin.options.ignorepaths);
           if (availableAlarmPaths.length != numberOfAvailableAlarmPaths) {
             numberOfAvailableAlarmPaths = availableAlarmPaths.length;
             if (unsubscribes) { unsubscribes.forEach(f => f()); unsubscribes = []; }
@@ -174,10 +181,10 @@ module.exports = function (app) {
           }
           if (updated) {
             (new Delta(app, plugin.id)).addValue(options.digestpath, notificationDigest).commit().clear();
-            if (options.outputs) {
-              options.outputs.forEach(output => {
+            if (plugin.options.outputs) {
+              plugin.options.outputs.forEach(output => {
                 var currentDigestStates = Object.keys(notificationDigest)
-                .filter(key => !notificationDigest[key].suppressedOutputs.includes(output.id))
+                .filter(key => !notificationDigest[key].suppressedOutputs.includes(output.name))
                 .map(key => notificationDigest[key].notification.state);
                 updateOutput(output, (output.triggerstates.filter(state => currentDigestStates.includes(state)).length > 0)?1:0);
               });
@@ -188,6 +195,8 @@ module.exports = function (app) {
     }
 
     function updateOutput(output, state) {
+      app.debug("updating output '%s' to state %d", output.name, state);
+
       var matches;
       if ((matches = output.path.match(/^switches\.(.*)\.state$/)) && (matches == 2)) {
         if (output.lastUpdateState != state) {
@@ -195,21 +204,21 @@ module.exports = function (app) {
           output.lastUpdateState = state;
         }
       } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)\:(.*)$/)) && (matches.length == 4)) {
-        state = (state)?matches[2]:matched[3];
+        var notificationState = (state)?matches[2]:matched[3];
         if (output.lastUpdateState != state) {
-          (new Delta(app, plugin.id)).addValue("notifications." + matches[1], { 'message': 'Alarm manager output', 'state': state, 'method': [] }).commit().clear();
+          (new Delta(app, plugin.id)).addValue("notifications." + matches[1], { 'message': 'Alarm manager output', 'state': notificationState, 'method': [] }).commit().clear();
           output.lastUpdateState = state;
         }
       } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)$/)) && (matches.length == 3)) {
-        state = (state)?matches[2]:null;
+        notificationState = (state)?matches[2]:null;
         if (output.lastUpdateState != state) {
-          (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': state, 'method': [] }:null).commit().clear();
+          (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': notificationState, 'method': [] }:null).commit().clear();
           output.lastUpdateState = state;
         }
       } else if ((matches = output.path.match(/^notifications\.(.*)$/)) && (matches.length == 2)) {
-        state = (state)?'normal':null;
+        notificationState = (state)?'normal':null;
         if (output.lastUpdateState != state) {
-          (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': state, 'method': [] }:null).commit().clear();
+          (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': notificationState, 'method': [] }:null).commit().clear();
           output.lastUpdateState = state;
         }
       } else {
@@ -225,6 +234,16 @@ module.exports = function (app) {
 	  resistantUnsubscribes.forEach(f => f());
     resistantUnsubscribes = [];
   }
+
+  plugin.registerWithRouter = function(router) {
+    router.get('/digest/', expressGetDigest);
+    router.get('/outputs/', expressGetOutputs);
+    router.get('/outputs/:name', expressGetOutput);
+    router.patch('/suppress/:name', expressSuppressOutput)
+  }
+
+  plugin.getOpenApi = function() { require("./resources/openApi.json"); }
+
 
   /********************************************************************
    * Returns a well formed notification object or null dependent upon
@@ -276,6 +295,62 @@ module.exports = function (app) {
       });
     return(retval);
   }
-   
+
+  function expressGetDigest(req, res) {
+    app.debug("processing %s request on %s", req.method, req.path);
+    try {
+      expressSend(res, 200, notificationDigest, req.path);
+    } catch(e) {
+      expressSend(res, 500, null, req.path);
+    }
+  }
+
+  function expressGetOutputs(req, res) {
+    app.debug("processing %s request on %s", req.method, req.path);
+    try {
+      var outputs = {};
+      plugin.options.outputs.forEach(output => { outputs[output.name] = output.lastUpdateState });
+      expressSend(res, 200, outputs, req.path);
+    } catch(e) {
+      expressSend(res, 500, null, req.path);
+    }
+  }
+
+  function expressGetOutput(req, res) {
+    app.debug("processing %s request on %s", req.method, req.path);
+    try {
+      var output = plugin.options.outputs.reduce((a,output) => ((output.name == req.params.name)?output:a), null);
+      if (output) {
+        expressSend(res, 200, new Number(output.lastUpdateState), req.path);
+      } else {
+        expressSend(res, 404, null, req.path);
+      }
+    } catch(e) {
+      expressSend(res, 500, null, req.path);
+    }
+  }
+
+  function expressSuppressOutput(req, res) {
+    app.debug("processing %s request on %s", req.method, req.path);
+    try {
+      if (plugin.options.outputs.map(output => output.name).includes(req.params.name)) {
+        Object.keys(notificationDigest).forEach(key => {
+          if (!notificationDigest[key].suppressedOutputs.includes(req.params.name)) notificationDigest[key].suppressedOutputs.push(req.params.name);
+        });
+        expressSend(res, 200, null, req.path);
+      } else {
+        expressSend(res, 404, null, req.path);
+      }
+    } catch(e) {
+      expressSend(res, 500, null, req.path);
+    }
+  }
+
+  function expressSend(res, code, body = null, debugPrefix = null) {
+    res.status(code).send((body)?body:((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null));
+    if (debugPrefix) app.debug("%s: %d %s", debugPrefix, code, ((body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)));
+    return(false);
+  }
+
   return(plugin);
 }
