@@ -28,13 +28,13 @@ Outputs can be individually suppressed by the appearance of a transient
 true value on a specified key allowing the easy implementation of a
 'silence alarm' function.
 
-I use the last feature to operate of a visual indicator when a warning
-or alert state is present and an audible alarm when an alarm or emergency
-state is present.
+I use this last feature to operate a visual indicator when a warning
+or alert state is present in Signal K and an audible alarm when an alarm
+or emergency state is present.
 
 The plugin exposes an
 [HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarm-manager/)
-and contributes OpenAPI documentation of this interface to the Signal
+and contributes OpenAPI documentation of its interface to the Signal
 K OpenAPI service.
 
 The design of the plugin acknowledges the Signal K specification
