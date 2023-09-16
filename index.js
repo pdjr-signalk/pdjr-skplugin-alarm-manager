@@ -23,33 +23,48 @@ const PLUGIN_DESCRIPTION = "Issue notification and other outputs in response to 
 const PLUGIN_SCHEMA = {
   "type": "object",
   "properties": {
-    "digestpath": {
+    "digestPath": {
+      "title": "Digest path",
+      "description": "Signal K key that will hold the alarm notification digest",
       "type": "string",
-      "description": "Where to put the alarm notification digest",
       "default": "plugins.alarm-manager.digest"
     },
-    "ignorepaths": {
+    "ignorePaths": {
+      "title": "Ignore paths",
+      "description": "Paths or path prefixes that should be ignored by the alarm manager",
       "type": "array",
-      "description": "Paths that that should be ignored by the alarm manager",
-      "title": "Ignore keys under these paths", 
       "items": { "type": "string" },
       "default": [ "design.", "electrical.", "environment.", "network.", "notifications.", "plugins.", "sensors." ]
     },
     "outputs": {
-      "description": "Switch paths that should be set when active alarms with the defined states are present",
+      "title": "Output channels",
+      "description": "Output channels that should be set when active alarms with the defined states are present",
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "path": { "type": "string" },
-          "triggerstates": {
+          "name": {
+            "title": "Output channel name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Signal K key that will report the output channel state",
+            "description": "This can be a switch path or a notification path",
+            "type": "string"
+          },
+          "triggerStates": {
+            "title": "Trigger states",
+            "description": "Alarm states which will modulate this output",
             "type": "array",
             "items": { "type": "string", "enum": [ "normal", "warn", "alert", "alarm", "emergency" ] }
           },
-          "suppressionPath": { "type": "string" }
+          "suppressionPath": {
+            "title": "Suppression path",
+            "description": "Signal K which can be toggled to suppress output on this channel",
+            "type": "string"
+          }
         },
-        "required" : [ "name", "path", "triggerstates" ],
+        "required" : [ "name", "path", "triggerStates" ],
         "default": []
       }
     },
@@ -122,8 +137,8 @@ module.exports = function (app) {
     var numberOfAvailableAlarmPaths = 0;
 
     plugin.options = {};
-    plugin.options.digestpath = options.digestpath || plugin.schema.properties.digestpath.default;
-    plugin.options.ignorepaths = options.ignorepaths || plugin.schema.properties.ignorepaths.default;
+    plugin.options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
+    plugin.options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
     plugin.options.outputs = options.outputs || plugin.schema.properties.outputs.default;
     plugin.options.defaultMethods = options.defaultMethods || plugin.schema.properties.defaultMethods.default;
     app.savePluginOptions(plugin.options, () => { app.debug("saved plugin options") });
@@ -144,7 +159,7 @@ module.exports = function (app) {
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
         if (e.data.numberOfAvailablePaths != numberOfAvailablePaths) {
-          var availableAlarmPaths = getAvailableAlarmPaths(app, plugin.options.defaultMethods, plugin.options.ignorepaths);
+          var availableAlarmPaths = getAvailableAlarmPaths(app, plugin.options.defaultMethods, plugin.options.ignorePaths);
           if (availableAlarmPaths.length != numberOfAvailableAlarmPaths) {
             numberOfAvailableAlarmPaths = availableAlarmPaths.length;
             if (unsubscribes) { unsubscribes.forEach(f => f()); unsubscribes = []; }
@@ -180,13 +195,13 @@ module.exports = function (app) {
             }
           }
           if (updated) {
-            (new Delta(app, plugin.id)).addValue(options.digestpath, notificationDigest).commit().clear();
+            (new Delta(app, plugin.id)).addValue(options.digestPath, notificationDigest).commit().clear();
             if (plugin.options.outputs) {
               plugin.options.outputs.forEach(output => {
                 var currentDigestStates = Object.keys(notificationDigest)
                 .filter(key => !notificationDigest[key].suppressedOutputs.includes(output.name))
                 .map(key => notificationDigest[key].notification.state);
-                updateOutput(output, (output.triggerstates.filter(state => currentDigestStates.includes(state)).length > 0)?1:0);
+                updateOutput(output, (output.triggerStates.filter(state => currentDigestStates.includes(state)).length > 0)?1:0);
               });
             }
           }
