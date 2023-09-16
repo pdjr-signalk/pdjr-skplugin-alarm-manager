@@ -6,17 +6,9 @@ conditions.
 ## Description
 
 __pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
-issuing alarm notifications when Signal K key values enter alarm zones
-defined by metadata values associated with each keys.
-
-The design of the plugin acknowledges the Signal K specification
-discussions on 
-[Metadata](https://github.com/SignalK/specification/blob/master/gitbook-docs/data_model_metadata.md)
-and
-[Alarm, Alert, and Notification Handling](https://github.com/SignalK/specification/blob/master/gitbook-docs/notifications.md).
-
-__pdjr-skplugin-alarm-manager__ generates three types of output in
-response to an alarm condition.
+the management of alarm conditions in Signal K which arise when key values
+enter the alarm zones defined by key metadata.
+The plugin provides three distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
 by issuing alarm notifications: thus, an alarm triggered by a value
@@ -30,19 +22,26 @@ This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
 Thirdly, the plugin operates zero or more user-defined, suppressable,
-switch or notification outputs dependent upon the alarm states present
-in the digest.
-This allows, for example, the operation of an indicator when a warning
-or alert state is present and an audible alarm when an alarm or
-emergency state is present.
+switch or notification outputs with values dependent upon the collated
+alarm states of notifications in the digest.
 Outputs can be individually suppressed by the appearance of a transient
 true value on a specified key allowing the easy implementation of a
 'silence alarm' function.
+
+I use the last feature to operate of a visual indicator when a warning
+or alert state is present and an audible alarm when an alarm or emergency
+state is present.
 
 The plugin exposes an
 [HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarm-manager/)
 and contributes OpenAPI documentation of this interface to the Signal
 K OpenAPI service.
+
+The design of the plugin acknowledges the Signal K specification
+discussions on 
+[Metadata](https://github.com/SignalK/specification/blob/master/gitbook-docs/data_model_metadata.md)
+and
+[Alarm, Alert, and Notification Handling](https://github.com/SignalK/specification/blob/master/gitbook-docs/notifications.md).
 
 ## Configuration
 
