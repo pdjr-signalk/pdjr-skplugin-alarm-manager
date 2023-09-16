@@ -56,7 +56,10 @@ const PLUGIN_SCHEMA = {
             "title": "Trigger states",
             "description": "Alarm states which will modulate this output",
             "type": "array",
-            "items": { "type": "string", "enum": [ "normal", "warn", "alert", "alarm", "emergency" ] }
+            "items": {
+              "type": "string",
+              "enum": [ "normal", "warn", "alert", "alarm", "emergency" ]
+            }
           },
           "suppressionPath": {
             "title": "Suppression path",
@@ -105,7 +108,25 @@ const PLUGIN_SCHEMA = {
     }
   }
 }
-const PLUGIN_UISCHEMA = {};
+const PLUGIN_UISCHEMA = {
+  digestPath: {
+    "classNames": "col-sm-12"
+  },
+  ignorePaths: {
+    "ui:field": "collapsible",
+    "collapse": {
+        "field": "ArrayField",
+        "wrapClassName": "panel-group"
+    },
+    "ui:options": {
+      "removable": true,
+      "addable": true,
+      "orderable": true
+    }
+  },
+  outputs: {
+  }
+};
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
 
