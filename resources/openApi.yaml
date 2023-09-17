@@ -16,6 +16,26 @@ externalDocs:
   description: Plugin README document
   url: https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme 
 paths:
+  /keys:
+    get:
+      description: |
+        Get a digest of all Signal K keys which are being monitored for
+        alarm activity (i.e. all keys where the associated metadata
+        includes some zone definitions).
+      responses:
+        200:
+          description: |
+            Success.
+            The response body is an array containing the keys of all
+            currently monitored data items.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/keys"
+        500:
+          description: |
+            Error.
+            The server was unable to service the request.       
   /digest:
     get:
       description: |
@@ -135,6 +155,15 @@ components:
       type: object
       additionalProperties:
         $ref: "#/components/schemas/state"
+    keys:
+      description: |
+        Array containing the Signal K keys currently being monitored by
+        the alarm manager.
+      example:
+        [ "tanks.wasteWater.0.currentLevel" ]
+      type: array
+      items:
+        type: string
     digest:
       description: |
         Object containing a collection of active alarm notifications

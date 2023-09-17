@@ -14,6 +14,26 @@
     "url": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme"
   },
   "paths": {
+    "/keys": {
+      "get": {
+        "description": "Get a digest of all Signal K keys which are being monitored for\nalarm activity (i.e. all keys where the associated metadata\nincludes some zone definitions).\n",
+        "responses": {
+          "200": {
+            "description": "Success.\nThe response body is an array containing the keys of all\ncurrently monitored data items.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/keys"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error.\nThe server was unable to service the request.       \n"
+          }
+        }
+      }
+    },
     "/digest": {
       "get": {
         "description": "Get a digest of all active alarm notifications.\n",
@@ -139,6 +159,16 @@
         "type": "object",
         "additionalProperties": {
           "$ref": "#/components/schemas/state"
+        }
+      },
+      "keys": {
+        "description": "Array containing the Signal K keys currently being monitored by\nthe alarm manager.\n",
+        "example": [
+          "tanks.wasteWater.0.currentLevel"
+        ],
+        "type": "array",
+        "items": {
+          "type": "string"
         }
       },
       "digest": {
