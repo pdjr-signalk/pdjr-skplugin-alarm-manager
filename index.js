@@ -163,7 +163,7 @@ const PLUGIN_UISCHEMA = {
     "ui:field": "collapsible",
     "collapse": {
       "field": "ObjectField",
-      "wrapClassName": "panel-group"
+      "wrapClassName": "field-object"
     },
     "alertMethod": {
       "ui:widget": "checkboxes",
