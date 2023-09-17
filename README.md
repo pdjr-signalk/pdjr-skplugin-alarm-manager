@@ -22,11 +22,20 @@ This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
 Thirdly, the plugin operates zero or more user-defined, suppressable,
-switch or notification outputs with values dependent upon the
+output channels each with an alarm state that is dependent upon the
 consolidated alarm states of notifications in the digest.
-Outputs can be individually suppressed by the appearance of a transient
-true value on a specified key allowing the easy implementation of a
-'silence alarm' function.
+In this context 'consolidated' means that if a particular alarm state
+is present in any digest notification, then the digest as a whole is
+considered to be in that alarm state.
+
+An active output channel can be individually suppressed by supplying
+a transient true value on a specified key.
+Suppression is applied at the digest notification level and applies
+to just those alarm stated configured for the output channel.
+This means that if a new notification appears or an existing notification
+changes state then the alarm channel will go active again.
+This mechanism allows the easy implementation of a 'silence alarm'
+function on selected output channels.
 
 I use this last feature to operate a visual indicator when a warning
 or alert state is present in Signal K and an audible alarm when an alarm
