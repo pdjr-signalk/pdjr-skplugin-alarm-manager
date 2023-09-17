@@ -59,7 +59,8 @@ const PLUGIN_SCHEMA = {
             "items": {
               "type": "string",
               "enum": [ "normal", "warn", "alert", "alarm", "emergency" ]
-            }
+            },
+            "uniqueItems": true
           },
           "suppressionPath": {
             "title": "Suppression path",
@@ -79,26 +80,34 @@ const PLUGIN_SCHEMA = {
         "alertMethod" : {
           "type" : "array",
           "items": {
-            "type": "string"
-          }
+            "type": "string",
+            "enum": [ "sound", "visual" ]
+          },
+          "uniqueItems": true
         },
         "warnMethod" : {
           "type" : "array",
           "items": {
-            "type": "string"
-          }
+            "type": "string",
+            "enum": [ "sound", "visual" ]
+          },
+          "uniqueItems": true
         },
         "alarmMethod" : {
           "type" : "array",
           "items": {
-            "type": "string"
-          }
+            "type": "string",
+            "enum": [ "sound", "visual" ]
+          },
+          "uniqueItems": true
         },
         "emergencyMethod" : {
           "type" : "array",
           "items": {
-            "type": "string"
-          }
+            "type": "string",
+            "enum": [ "sound", "visual" ]
+          },
+          "uniqueItems": true
         }
       },
       "default": {
@@ -109,24 +118,69 @@ const PLUGIN_SCHEMA = {
       }
     }
   }
-}
+};
 const PLUGIN_UISCHEMA = {
-  digestPath: {
-    "classNames": "col-sm-12"
-  },
-  ignorePaths: {
+  "ignorePaths": {
     "ui:field": "collapsible",
     "collapse": {
-        "field": "ArrayField",
-        "wrapClassName": "panel-group"
+      "field": "ArrayField",
+      "wrapClassName": "panel-group"
     },
     "ui:options": {
       "removable": true,
       "addable": true,
-      "orderable": true
+      "orderable": false
     }
   },
-  outputs: {
+  "digestPath": {
+    "classNames": "col-sm-12"
+  },
+  "outputs": {
+    "ui:field": "collapsible",
+    "collapse": {
+      "field": "ArrayField",
+      "wrapClassName": "panel-group"
+    },
+    "ui:options": {
+      "removable": true,
+      "addable": true,
+      "orderable": false
+    },
+    "items": {
+      "name": {
+      },
+      "path": {
+      },
+      "triggerStates": {
+        "ui:widget": "checkboxes",
+        "ui:options": { "inline": true }
+      },
+      "suppressionPath": {
+      }
+    }
+  },
+  "defaultMethods": {
+    "ui:field": "collapsible",
+    "collapse": {
+      "field": "ObjectField",
+      "wrapClassName": "panel-group"
+    },
+    "alertMethod": {
+      "ui:widget": "checkboxes",
+      "ui:options": { "inline": true }
+    },
+    "warnMethod": {
+      "ui:widget": "checkboxes",
+      "ui:options": { "inline": true }
+    },
+    "alarmMethod": {
+      "ui:widget": "checkboxes",
+      "ui:options": { "inline": true }
+    },
+    "emergencyMethod": {
+      "ui:widget": "checkboxes",
+      "ui:options": { "inline": true }
+    }
   }
 };
 
@@ -278,7 +332,7 @@ module.exports = function (app) {
     router.get('/digest/', expressGetDigest);
     router.get('/outputs/', expressGetOutputs);
     router.get('/outputs/:name', expressGetOutput);
-    router.patch('/suppress/:name', expressSuppressOutput)
+    router.patch('/suppress/:name', expressSuppressOutput);
   }
 
   plugin.getOpenApi = function() { require("./resources/openApi.json"); }
