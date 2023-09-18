@@ -243,7 +243,7 @@ module.exports = function (app) {
     // the new ones.
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
-        var availableAlarmPaths = getAvailableAlarmPaths(app, plugin.options.defaultMethods, plugin.options.ignorePaths);
+        var availableAlarmPaths = getAvailableAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
         if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
           alarmPaths = availableAlarmPaths;
           if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
@@ -254,7 +254,6 @@ module.exports = function (app) {
     });
   }
 
-
   plugin.stop = function() {
 	  unsubscribes.forEach(f => f());
     unsubscribes = [];
@@ -263,11 +262,11 @@ module.exports = function (app) {
   }
 
   plugin.registerWithRouter = function(router) {
-    router.get('/digest/', expressGetDigest);
-    router.get('/keys', expressGetKeys);
-    router.get('/outputs/', expressGetOutputs);
-    router.get('/outputs/:name', expressGetOutput);
-    router.patch('/suppress/:name', expressSuppressOutput);
+    router.get('/keys', (req, res) => handleRoute(req, res));
+    router.get('/digest/', (req, res) => handleRoute(req, res));
+    router.get('/outputs/', (req, res) => handleRoute(req, res));
+    router.get('/output/:name', (req, res) => handleRoute(req, res));
+    router.patch('/suppress/:name', (req, res) => handleRoute(req, res));
   }
 
   plugin.getOpenApi = function() { require("./resources/openApi.json"); }
@@ -375,10 +374,9 @@ module.exports = function (app) {
    * filtered to remove those paths with prefixes in the <ignore>
    * array.
    */
-
-  function getAvailableAlarmPaths(app, defaultMethods, ignore=[]) {
-    var retval = app.streambundle.getAvailablePaths()
-      .filter(p => (!(ignore.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
+  function getAvailableAlarmPaths(availablePaths, ignorePaths, defaultMethods) {
+    var retval = availablePaths
+      .filter(p => (!(ignorePaths.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
       .filter(p => {
         var meta = app.getSelfPath(p + ".meta");
         if ((meta) && (meta.zones) && (meta.zones.length > 0)) {
@@ -390,9 +388,8 @@ module.exports = function (app) {
         } else {
           return(false);
         }
-      })
-      .sort();
-    return(retval);
+      });
+    return(retval.sort());
   }
 
   function compareAlarmPaths(a, b) {
@@ -402,70 +399,48 @@ module.exports = function (app) {
     return(true);
   }
 
-  function expressGetDigest(req, res) {
+  function handleRoute(req, res) {
     app.debug("processing %s request on %s", req.method, req.path);
     try {
-      expressSend(res, 200, notificationDigest, req.path);
-    } catch(e) {
-      expressSend(res, 500, null, req.path);
-    }
-  }
-
-  function expressGetKeys(req, res) {
-    app.debug("processing %s request on %s", req.method, req.path);
-    try {
-      expressSend(res, 200, alarmPaths, req.path);
-    } catch(e) {
-      expressSend(res, 500, null, req.path);
-    }
- 
-  }
-
-  function expressGetOutputs(req, res) {
-    app.debug("processing %s request on %s", req.method, req.path);
-    try {
-      var outputs = {};
-      plugin.options.outputs.forEach(output => { outputs[output.name] = output.lastUpdateState });
-      expressSend(res, 200, outputs, req.path);
-    } catch(e) {
-      expressSend(res, 500, null, req.path);
-    }
-  }
-
-  function expressGetOutput(req, res) {
-    app.debug("processing %s request on %s", req.method, req.path);
-    try {
-      var output = plugin.options.outputs.reduce((a,output) => ((output.name == req.params.name)?output:a), null);
-      if (output) {
-        expressSend(res, 200, new Number(output.lastUpdateState), req.path);
-      } else {
-        expressSend(res, 404, null, req.path);
+      switch (req.path.slice(0, (req.path.indexOf('/', 1) == -1)?undefined:req.path.indexOf('/', 1))) {
+        case '/keys':
+          expressSend(res, 200, alarmPaths, req.path);
+          break;
+        case '/digest':
+          expressSend(res, 200, notificationDigest, req.path);
+          break;
+        case '/outputs':
+          expressSend(res, 200, plugin.options.outputs.reduce((a,v) => { a[v.name] = v.lastUpdateState; return(a); }, {}), req.path);
+          break;
+        case '/output':
+          var output = plugin.options.outputs.reduce((a,o) => ((o.name == req.params.name)?o:a), null);
+          if (output) {
+            expressSend(res, 200, new Number(output.lastUpdateState), req.path);
+          } else {
+            throw new Error("404");
+          }
+          break;
+        case '/suppress':
+          if (plugin.options.outputs.map(output => output.name).includes(req.params.name)) {
+            Object.keys(notificationDigest).forEach(key => {
+              if (!notificationDigest[key].suppressedOutputs.includes(req.params.name)) notificationDigest[key].suppressedOutputs.push(req.params.name);
+            });
+            expressSend(res, 200, null, req.path);
+          } else {
+            throw new Error("404");
+          }
+          break;
       }
     } catch(e) {
-      expressSend(res, 500, null, req.path);
+      expressSend(res, ((/^\d+$/.test(e.message))?parseInt(e.message):500), null, req.path);
     }
-  }
 
-  function expressSuppressOutput(req, res) {
-    app.debug("processing %s request on %s", req.method, req.path);
-    try {
-      if (plugin.options.outputs.map(output => output.name).includes(req.params.name)) {
-        Object.keys(notificationDigest).forEach(key => {
-          if (!notificationDigest[key].suppressedOutputs.includes(req.params.name)) notificationDigest[key].suppressedOutputs.push(req.params.name);
-        });
-        expressSend(res, 200, null, req.path);
-      } else {
-        expressSend(res, 404, null, req.path);
-      }
-    } catch(e) {
-      expressSend(res, 500, null, req.path);
+    function expressSend(res, code, body = null, debugPrefix = null) {
+      res.status(code).send((body)?body:((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null));
+      if (debugPrefix) app.debug("%s: %d %s", debugPrefix, code, ((body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)));
+      return(false);
     }
-  }
 
-  function expressSend(res, code, body = null, debugPrefix = null) {
-    res.status(code).send((body)?body:((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null));
-    if (debugPrefix) app.debug("%s: %d %s", debugPrefix, code, ((body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)));
-    return(false);
   }
 
   return(plugin);
