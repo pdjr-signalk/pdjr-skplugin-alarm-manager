@@ -186,14 +186,6 @@ const PLUGIN_UISCHEMA = {
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
 
-const FETCH_RESPONSES = {
-  200: null,
-  201: null,
-  400: "bad request",
-  404: "not found",
-  503: "service unavailable (try again later)",
-  500: "internal server error"
-};
 
 module.exports = function (app) {
   var plugin = {};
@@ -262,14 +254,16 @@ module.exports = function (app) {
   }
 
   plugin.registerWithRouter = function(router) {
-    router.get('/keys', (req, res) => handleRoute(req, res));
-    router.get('/digest/', (req, res) => handleRoute(req, res));
-    router.get('/outputs/', (req, res) => handleRoute(req, res));
-    router.get('/output/:name', (req, res) => handleRoute(req, res));
-    router.patch('/suppress/:name', (req, res) => handleRoute(req, res));
+    router.get('/keys', handleRoutes);
+    router.get('/digest/', handleRoutes);
+    router.get('/outputs/', handleRoutes);
+    router.get('/output/:name', handleRoutes);
+    router.patch('/suppress/:name', handleRoutes);
   }
 
-  plugin.getOpenApi = function() { require("./resources/openApi.json"); }
+  plugin.getOpenApi = function() {
+    require("./resources/openApi.json");
+  }
 
   function startAlarmMonitoring(availableAlarmPaths, digest, unsubscribes) {
     availableAlarmPaths.forEach(path => {
@@ -399,7 +393,13 @@ module.exports = function (app) {
     return(true);
   }
 
-  function handleRoute(req, res) {
+  /**
+   * Callback handler for all Express routes.
+   * 
+   * @param {*} req - router req parameter.
+   * @param {*} res - router res parameter.
+   */
+  function handleRoutes(req, res) {
     app.debug("processing %s request on %s", req.method, req.path);
     try {
       switch (req.path.slice(0, (req.path.indexOf('/', 1) == -1)?undefined:req.path.indexOf('/', 1))) {
@@ -436,6 +436,7 @@ module.exports = function (app) {
     }
 
     function expressSend(res, code, body = null, debugPrefix = null) {
+      const FETCH_RESPONSES = { 200: null, 201: null, 404: "not found", 500: "internal server error" };
       res.status(code).send((body)?body:((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null));
       if (debugPrefix) app.debug("%s: %d %s", debugPrefix, code, ((body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)));
       return(false);
