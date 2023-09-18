@@ -264,8 +264,18 @@ module.exports = function (app) {
     require("./resources/openApi.json");
   }
 
-  function startAlarmMonitoring(availableAlarmPaths, digest, unsubscribes) {
-    availableAlarmPaths.forEach(path => {
+  /**
+   * Start monitoring the keys specified by alarmPaths by subscribing
+   * for updates (adding the unsubscribe function to unsubscribes).
+   * Detected alarm conditions are notified and digest is updated to
+   * reflect the system's current alarm state.
+   *   
+   * @param {*} alarmPaths - array of keys to monitor.
+   * @param {*} digest - digest object to be updated.
+   * @param {*} unsubscribes - array of unsubscribes functions.
+   */
+  function startAlarmMonitoring(alarmPaths, digest, unsubscribes) {
+    alarmPaths.forEach(path => {
       var meta = app.getSelfPath(path + ".meta");
       let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
       zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
