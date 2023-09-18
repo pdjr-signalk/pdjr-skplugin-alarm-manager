@@ -124,7 +124,7 @@ const PLUGIN_UISCHEMA = {
     "ui:field": "collapsible",
     "collapse": {
       "field": "ArrayField",
-      "wrapClassName": "panel-group"
+      "wrapClassName": "field-object"
     },
     "ui:options": {
       "removable": true,
