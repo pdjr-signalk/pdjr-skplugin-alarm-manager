@@ -186,7 +186,6 @@ const PLUGIN_UISCHEMA = {
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
 
-
 module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
