@@ -6,8 +6,8 @@ conditions.
 ## Description
 
 __pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
-the management of alarm conditions in Signal K which arise when key values
-enter the alarm zones defined by key metadata.
+the management of alarm conditions in Signal K which arise when key
+values enter alarm zones defined by key metadata.
 The plugin provides three distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
@@ -16,24 +16,25 @@ notification on 'notifications.*key*' whenever the value of *key* enters
 an alarm zone defined in *key*'s metadata.
 
 Secondly, the plugin maintains a digest of current alarm notifications.
-The digest is a JSON object whose properties are notified *key*s with
-values equivalent to their associated notification.
+The digest is a JSON object whose property keys are notified *key*s
+with the associated notification object as their value.
 This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
 Thirdly, the plugin operates zero or more user-defined, suppressable,
 output channels each with an alarm state that is dependent upon the
-consolidated alarm states of notifications in the digest.
+alarm states it is configured to respond to and the consolidated alarm
+states of notifications in the digest.
 In this context 'consolidated' means that if a particular alarm state
 is present in any digest notification, then the digest as a whole is
-considered to be in that alarm state.
+considered to be in that consilidated alarm state.
 
-An active output channel can be individually suppressed by supplying
-a transient true value on a specified key.
+An active output channel can be suppressed by supplying a transient
+true value on a configured key.
 Suppression is applied at the digest notification level and applies
-to just those alarm stated configured for the output channel.
+to just those alarm states for wghich the output channel is configured.
 This means that if a new notification appears or an existing notification
-changes state then the alarm channel will go active again.
+changes state then the alarm channel may go active again.
 This mechanism allows the easy implementation of a 'silence alarm'
 function on selected output channels.
 
