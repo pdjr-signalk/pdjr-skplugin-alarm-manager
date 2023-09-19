@@ -8,7 +8,7 @@ conditions.
 __pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
 the management of alarm conditions in Signal K which arise when key
 values enter alarm zones defined by key metadata.
-The plugin provides three distinct services.
+The plugin provides four distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
 by issuing alarm notifications: thus, a value on '*key*' will raise a
@@ -41,6 +41,10 @@ function on selected output channels.
 I use this last feature to operate a visual indicator when a warning
 or alert state is present in Signal K and an audible alarm when an alarm
 or emergency state is present.
+
+Finally, the plugin implements a notification subscription service
+which will deliver push notifications of alarm events to subscribed
+devices.
 
 The plugin exposes an
 [HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarm-manager/)

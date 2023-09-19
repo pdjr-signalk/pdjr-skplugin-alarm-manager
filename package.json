@@ -5,8 +5,14 @@
   "main": "index.js",
   "signalk-plugin-enabled-by-default": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "publish": "yq -o=json -I=2 resources/openApi.yaml > resources/openApi.json"
+    "format": "prettier-standard 'index.js'",
+    "publish": "yq -o=json -I=2 resources/openApi.yaml > resources/openApi.json",
+    "test": "mocha",
+    "prepublishOnly": "npm run clean && npm run build",
+    "dev": "webpack --watch --mode development",
+    "build": "webpack --mode=production",
+    "clean": "rimraf ./public",
+    "bundle-analyzer": "webpack-bundle-analyzer --port 4200 public/stats.json"
   },
   "repository": {
     "type": "git",
@@ -14,6 +20,7 @@
   },
   "keywords": [
     "signalk-node-server-plugin",
+    "signalk-plugin-configurator",
     "signalk-category-utility"
   ],
   "author": "Paul Reeve <preeve@pdjr.eu>",
@@ -23,11 +30,28 @@
   },
   "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme",
   "dependencies": {
-    "baconjs": "^1.0.1",
-    "sprintf-js": "^1.1.2"
+    "babel-loader": "^9.1.3",
+    "d3": "^7.8.5",
+    "react-collapsible": "^2.10.0",
+    "react-hook-form": "^7.45.4",
+    "sprintf-js": "^1.1.2",
+    "webpack": "^5.88.2"
   },
   "directories": {
     "lib": "lib"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.4",
+    "bootstrap": "^4.6.2",
+    "font-awesome": "^4.7.0",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
+    "react-redux": "^5.1.2",
+    "react-select": "^3.2.0",
+    "reactstrap": "^5.0.0",
+    "redux": "^3.7.2",
+    "redux-thunk": "^2.3.0",
+    "simple-line-icons": "^2.5.5",
+    "webpack-cli": "^5.1.4"
+  }
 }

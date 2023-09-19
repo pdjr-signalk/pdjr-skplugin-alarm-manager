@@ -234,7 +234,7 @@ module.exports = function (app) {
     // the new ones.
     app.on('serverevent', (e) => {
       if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
-        var availableAlarmPaths = getAvailableAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
+        var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
         if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
           alarmPaths = availableAlarmPaths;
           if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
@@ -377,7 +377,7 @@ module.exports = function (app) {
    * filtered to remove those paths with prefixes in the <ignore>
    * array.
    */
-  function getAvailableAlarmPaths(availablePaths, ignorePaths, defaultMethods) {
+  function getAlarmPaths(availablePaths, ignorePaths, defaultMethods) {
     var retval = availablePaths
       .filter(p => (!(ignorePaths.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
       .filter(p => {
@@ -395,6 +395,13 @@ module.exports = function (app) {
     return(retval.sort());
   }
 
+  /**
+   * Deep compare two string arrays for equality.
+   * 
+   * @param {*} a - first array.
+   * @param {*} b - second array.
+   * @returns - boolean TRUE if equal otherwise false.
+   */
   function compareAlarmPaths(a, b) {
     var retval = false;
     if (a.length !== b.length) return(false);
