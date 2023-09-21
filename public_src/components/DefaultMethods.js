@@ -6,15 +6,22 @@ import FormField from './FormField';
 class DefaultMethods extends React.Component {
 
   constructor(props) {
-    console.log("DefaultMethods(%s)...", JSON.stringify(props));
+    //console.log("DefaultMethods(%s)...", JSON.stringify(props));
     super(props);
 
-    this.options = [ { label: 'visual', value: 'visual'}, { label: 'sound', value: 'sound' }];
-    this.label = props.label;
-    this.labelWidth = props.labelWidth;
-    this.label_style = { lineHeight: '10px' };
+    this.methodOptions = props.methodOptions || [ { label: 'visual', value: 'visual'}, { label: 'sound', value: 'sound' }];
+
     this.onChangeCallback = props.onChangeCallback;
     this.value = props.value;
+  }
+
+  getMethodAsOption(name) {
+    return(this.value[name].map(v => ({ label: v, value: v })));
+  }
+
+  setMethodFromOptions(name, options) {
+    this.value[name] = options.map(option => option.value);
+    this.onChangeCallback(this.value);
   }
 
   render() {
@@ -22,54 +29,49 @@ class DefaultMethods extends React.Component {
     return(
       <FormGroup row>
         <Col>
-          <Collapsible trigger={this.label} triggerWhenOpen={this.label} triggerStyle={{ fontWeight: 'bold' }}>
+          <Collapsible trigger={this.props.label + '...'} triggerStyle={{ fontWeight: 'bold' }}>
             <div style={this.contentStyle}>
               <FormField
                 type='multiselect'
                 name='alertMethod'
                 label='Alert'
                 labelWidth='3'
-                value={this.value.alertMethod.map(v => ({ label: v, value: v }))}
-                options={this.options}
-                onChangeCallback={(v)=>this.onChangeCallback('alertMethod', v)}
+                value={this.getMethodAsOption('alertMethod')}
+                options={this.methodOptions}
+                onChangeCallback={(options) => this.setMethodFromOptions('alertMethod', options)}
               />
               <FormField
                 type='multiselect'
                 name='warnMethod'
                 label='Warn'
                 labelWidth='3'
-                value={this.value.warnMethod.map(v => ({ label: v, value: v }))}
-                options={this.options}
-                onChangeCallback={(v)=>this.onChangeCallback('warnMethod', v)}
+                value={this.getMethodAsOption('warnMethod')}
+                options={this.methodOptions}
+                onChangeCallback={(options) => this.setMethodFromOptions('warnMethod', options)}
               />
               <FormField
                 type='multiselect'
                 name='alarmMethod'
                 label='Alarm'
                 labelWidth='3'
-                value={this.value.alarmMethod.map(v => ({ label: v, value: v }))}
-                options={this.options}
-                onChangeCallback={(v)=>this.onChangeCallback('alarmMethod', v)}
+                value={this.getMethodAsOption('alarmMethod')}
+                options={this.methodOptions}
+                onChangeCallback={(options) => this.setMethodFromOptions('alarmMethod', options)}
               />
               <FormField
                 type='multiselect'
                 name='emergencyMethod'
                 label='Emergency'
                 labelWidth='3'
-                value={this.value.emergencyMethod.map(v => ({ label: v, value: v }))}
-                options={this.options}
-                onChangeCallback={(v)=>this.onChangeCallback('emergencyMethod', v)}
+                value={this.getMethodAsOption('emergencyMethod')}
+                options={this.methodOptions}
+                onChangeCallback={(options) => this.setMethodFromOptions('emergencyMethod', options)}
               />
             </div>
           </Collapsible>
         </Col>
       </FormGroup>
     );
-  }
-
-  onChangeCallback(name, value) {
-    this.value[name] = value.map(v => v.value);
-    this.onChangeCallback(this.value);
   }
 
 }

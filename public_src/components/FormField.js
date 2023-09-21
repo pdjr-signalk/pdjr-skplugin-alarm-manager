@@ -5,7 +5,7 @@ import Select from 'react-select';
 class FormField extends React.Component {
 
   constructor(props) {
-    console.log("FormField:\n", JSON.stringify(props, null, 2));
+    //console.log("FormField:\n", JSON.stringify(props, null, 2));
     super(props);
 
     this.type = props.type || 'text'

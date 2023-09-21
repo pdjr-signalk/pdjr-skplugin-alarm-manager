@@ -7,13 +7,36 @@ import Outputs from './Outputs';
 class PluginConfigurator extends React.Component {
 
   constructor(props) {
-    console.log("PluginConfigurator:\n", JSON.stringify(props, null, 2));
+    //console.log("PluginConfigurator:\n", JSON.stringify(props, null, 2));
     super(props);
 
-    this.ignorePaths = props.configuration.ignorePaths;
-    this.digestPath = props.configuration.digestPath;
-    this.outputs = props.configuration.outputs;
-    this.defaultMethods = props.configuration.defaultMethods;
+    this.state = {
+      saveButtonDisabled: true,
+      cancelButtonDisabled: true,
+      digestPath: _.cloneDeep(this.props.configuration.digestPath)
+    }
+
+    this.options = _.cloneDeep(this.props.configuration);
+  }
+
+  setIgnorePaths(text) {
+    this.options.ignorePaths = text.split(',').map(path => path.trim());
+    this.setState({ saveButtonDisabled: false, cancelButtonDisabled: false });
+  }
+
+  setDigestPath(text) {
+    this.setState({ digestPath: text.trim() });
+    this.setState({ saveButtonDisabled: false, cancelButtonDisabled: false });
+  }
+
+  setOutputs(outputs) {
+    this.options.outputs = outputs;
+    this.setState({ saveButtonDisabled: false, cancelButtonDisabled: false });
+  }
+
+  setDefaultMethods(defaultMethods) {
+    this.options.defaultMethods = defaultMethods;
+    this.setState({ saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
   render() {
@@ -21,21 +44,20 @@ class PluginConfigurator extends React.Component {
       <Form className='square rounded border' style={{ padding: '5px' }}>
         <FormGroup row /*style={{ height: '300px' }}*/>
           <Col>
-            <FormField type='textarea' name='ignorePaths' label='Ignore paths' labelWidth='3' value={this.ignorePaths.join(', ')} rows='2' wrap='on' style={{ width: '100%' }} onChangeCallback={(v) => { this.ignorePaths = v.split(',').map(v=>v.trim()) }} />
-            <FormField type='text' name='digestPath' label='Digest path' labelWidth='3' value={this.digestPath} text='' onChangeCallback={(v) => { this.digestPath = v }} />
-            <Outputs value={this.outputs} label='Outputs' labelWidth='3' onChangeCallback={(v) => { this.outputs = v; }} />
-            <DefaultMethods value={this.defaultMethods} label='Default methods' labelWidth='3' onChangeCallback={(v) => { this.defaultMethods = v; }} />
+            <FormField type='textarea' name='ignorePaths' label='Ignore paths' labelWidth='3' value={this.options.ignorePaths.join(', ')} rows='2' wrap='on' style={{ width: '100%' }} onChangeCallback={(v) => this.setIgnorePaths(v)} />
+            <FormField type='text' name='digestPath' label='Digest path' labelWidth='3' value={this.state.digestPath} text='' onChangeCallback={(v) => this.setDigestPath(v)} />
+            <Outputs value={this.options.outputs} label='Outputs' labelWidth='3' onChangeCallback={(v) => this.setOutputs(v)} />
+            <DefaultMethods value={this.options.defaultMethods} label='Default methods' labelWidth='3' onChangeCallback={(v) => this.setDefaultMethods(v)} />
           </Col>
         </FormGroup>
         <FormGroup row>
           <Col>
             <ButtonToolbar style={{ justifyContent: 'space-between' }}>
               <ButtonToolbar>
-                <Button size='sm' color='primary' onClick={(e) => { e.preventDefault(); this.onSubmit(); }}><i className='fa fa-save' /> Save </Button>&nbsp;
-                <Button size='sm' color='primary' onClick={(e) => { e.preventDefault(); this.onCancel(); }}><i className='fa fa-ban' /> Cancel </Button>
+                <Button size='sm' color='primary' disabled={this.state.saveButtonDisabled} onClick={(e) => { e.preventDefault(); this.onSubmit(); }}><i className='fa fa-save' /> Save </Button>&nbsp;
+                <Button size='sm' color='primary' disabled={this.state.cancelButtonDisabled} onClick={(e) => { e.preventDefault(); this.onCancel(); }}><i className='fa fa-ban' /> Cancel </Button>
               </ButtonToolbar>
               <ButtonToolbar>
-                <Button size='sm' color='danger' onClick={(e) => { e.preventDefault(); this.onCompose(); }}><i className='fa fa-save' /> Subscribe </Button>&nbsp;
               </ButtonToolbar>
             </ButtonToolbar>
           </Col>
@@ -43,34 +65,21 @@ class PluginConfigurator extends React.Component {
       </Form>
     )
   }
-
-  onChangeIgnorePaths(s) { this.setState({ ignorePaths: s }); }
-  onChangeDigestPath(s) { this.setState({ digestPath: s }); }
-  onChangeOutputs(n) { }
-  onChangeDefaultMethods(n, v) {
-    var nv = Object.keys(this.state.defaultMethods).reduce((a,k) => {
-      a[k] = (k === n)?v:this.state.defaultMethods[k];
-    }, {});
-  }
   
   /** BUTTON HANDLERS ************************************************/ 
 
   onSubmit() {
-    this.save({
-      ignorePaths: this.state.ignorePaths.split(',').map(v => v.trim()),
-      digestPath: this.state.digestPath,
-      outputs: outputs,
-      defaultMethods: Object.keys(this.state.defaultMethods).reduce((a,k) => {
-        a[k] = this.state.defaultMethods[k].map(v => (v.value));
-      }, {})
-    });
+    //console.log("onSubmit:\n%s", JSON.stringify(this.options, null, 2));
+    this.setState({ saveButtonDisabled: true, cancelButtonDisabled: true });
+    this.save(this.options);
   }
 
   onCancel() {
-    this.save(this.props.configuration);
-  }
-  
-  onSubscribe() {
+    //console.log("onCancel:\n%s", JSON.stringify(this.options, null, 2));
+    this.setState({ saveButtonDisabled: true, cancelButtonDisabled: true });
+    this.forceUpdate();
+    this.setState({ digestPath: _.cloneDeep(this.props.configuration.digestPath) });
+    this.forceUpdate();
   }
 
 }
