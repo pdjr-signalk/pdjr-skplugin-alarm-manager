@@ -77,7 +77,7 @@ const PLUGIN_SCHEMA = {
       "description": "The notification methods to use if none are specified in key metadata",
       "type": "object",
       "properties": {
-        "alertMethod" : {
+        "alert" : {
           "type" : "array",
           "items": {
             "type": "string",
@@ -85,7 +85,7 @@ const PLUGIN_SCHEMA = {
           },
           "uniqueItems": true
         },
-        "warnMethod" : {
+        "warn" : {
           "type" : "array",
           "items": {
             "type": "string",
@@ -93,7 +93,7 @@ const PLUGIN_SCHEMA = {
           },
           "uniqueItems": true
         },
-        "alarmMethod" : {
+        "alarm" : {
           "type" : "array",
           "items": {
             "type": "string",
@@ -101,7 +101,7 @@ const PLUGIN_SCHEMA = {
           },
           "uniqueItems": true
         },
-        "emergencyMethod" : {
+        "emergency" : {
           "type" : "array",
           "items": {
             "type": "string",
@@ -383,10 +383,10 @@ module.exports = function (app) {
       .filter(p => {
         var meta = app.getSelfPath(p + ".meta");
         if ((meta) && (meta.zones) && (meta.zones.length > 0)) {
-          meta.alertMethod = (meta.alertMethod || defaultMethods.alertMethod);
-          meta.warnMethod = (meta.warnMethod || defaultMethods.warnMethod);
-          meta.alarmMethod = (meta.alarmMethod || defaultMethods.alarmMethod);
-          meta.emergencyMethod = (meta.emergencyMethod || defaultMethods.emergencyMethod);
+          meta.alertMethod = (meta.alertMethod || defaultMethods.alert);
+          meta.warnMethod = (meta.warnMethod || defaultMethods.warn);
+          meta.alarmMethod = (meta.alarmMethod || defaultMethods.alarm);
+          meta.emergencyMethod = (meta.emergencyMethod || defaultMethods.emergency);
           return(true);
         } else {
           return(false);
