@@ -9,6 +9,7 @@ const collapsiblePanelStyle = { background: '#f0f0f0', padding: '4px', marginTop
 const panelStyle = { background: '#e0e0e0', padding: '4px', marginBottom: '3px' };
 const methodOptions = [ { label: 'visual', value: 'visual'}, { label: 'sound', value: 'sound' }];
 const notificationStates = [ 'alert', 'warn', 'alarm', 'emergency' ];
+const labelWidth = '3';
 
 
 class PluginConfigurator extends React.Component {
@@ -101,7 +102,7 @@ class PluginConfigurator extends React.Component {
               type='textarea'
               name='ignorePaths'
               label='Ignore paths'
-              labelWidth='3'
+              labelWidth={labelWidth}
               value={this.state.ignorePaths}
               rows='2'
               wrap='on'
@@ -112,13 +113,13 @@ class PluginConfigurator extends React.Component {
               type='text'
               name='digestPath'
               label='Digest path'
-              labelWidth='3'
+              labelWidth={labelWidth}
               value={this.state.digestPath}
               text=''
               onChangeCallback={this.setDigestPath}
             />
             <Outputs
-              labelWidth='3'
+              labelWidth={labelWidth}
               collapsibleTriggerStyle={collapsibleTriggerStyle}
               collapsiblePanelStyle={collapsiblePanelStyle}
               collapsibleLabel='Outputs'
@@ -130,7 +131,7 @@ class PluginConfigurator extends React.Component {
               onCreateCallback={this.createOutput}
               />
             <DefaultMethods
-              labelWidth='3'
+              labelWidth={labelWidth}
               collapsibleLabel='Default methods'
               collapsibleTriggerStyle={collapsibleTriggerStyle}
               collapsiblePanelStyle={collapsiblePanelStyle}

@@ -4,6 +4,7 @@ import Collapsible from 'react-collapsible';
 import Output from './Output';
 
 export default function Outputs({
+  labelWidth='3',
   collapsibleTriggerStyle={},
   collapsiblePanelStyle={},
   collapsibleLabel='Outputs',
@@ -25,7 +26,7 @@ export default function Outputs({
                 return(
                   <Output
                     panelStyle={panelStyle}
-                    labelWidth='3'
+                    labelWidth={labelWidth}
                     output={output}
                     notificationStates={notificationStates}
                     onChangeCallback={onChangeCallback}

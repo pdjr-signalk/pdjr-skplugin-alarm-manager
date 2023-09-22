@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
-import { Button, Col, FormGroup } from 'reactstrap';
+import React from 'react';
+import { Button } from 'reactstrap';
 import FormField from './FormField';
 
+/**
+ * Render a panel for editing Output channel configuration data.
+ * 
+ * panelStyle - CSS for the panel
+ * labelWidth - the width mod 12 reserved for the input field label.
+ * notificationStates - array of notification states used in Select.
+ * output - the output channel configuration object.
+ * onChangeCallback - method to be called when a field change occurs.
+ * onDeleteCallback - method to be called to delete this channel.
+ * 
+ * @param {} param0 
+ * @returns - Component for rendering the panel.
+ */
 export default function Output({
   panelStyle={},
-  labelWidth=3,
+  labelWidth='3',
   notificationStates=[],
   output,
   onChangeCallback,

@@ -4,11 +4,11 @@ import Collapsible from 'react-collapsible';
 import FormField from './FormField';
 
 export default function DefaultMethods({
-  labelWidth,
-  collapsibleTriggerStyle,
-  collapsiblePanelStyle,
-  collapsibleLabel,
-  methodOptions,
+  labelWidth='3',
+  collapsibleTriggerStyle={},
+  collapsiblePanelStyle={},
+  collapsibleLabel='Default methods',
+  methodOptions=[],
   methods,
   onChangeCallback
 }) {
