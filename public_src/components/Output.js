@@ -5,7 +5,7 @@ import FormField from './FormField';
 /**
  * Render a panel for editing Output channel configuration data.
  * 
- * panelStyle - CSS for the panel
+ * panelStyle - CSS for the panel.
  * labelWidth - the width mod 12 reserved for the input field label.
  * notificationStates - array of notification states used in Select.
  * output - the output channel configuration object.
