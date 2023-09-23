@@ -21,18 +21,15 @@ with the associated notification object as their value.
 This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
-Thirdly, the plugin operates zero or more user-defined, suppressable,
-output channels each with an alarm state that is dependent upon the
-alarm states it is configured to respond to and the consolidated alarm
-states of notifications in the digest.
-In this context 'consolidated' means that if a particular alarm state
-is present in any digest notification, then the digest as a whole is
-considered to be in that consilidated alarm state.
+Thirdly, the plugin operates zero or more suppressable output channels
+each of which is configured to react to one or more alrm state triggers.
+When an alarm notification with one of the configured trigger states is
+raised the output channel is enabled.
 
 An active output channel can be suppressed by supplying a transient
 true value on a configured key.
 Suppression is applied at the digest notification level and applies
-to just those alarm states for wghich the output channel is configured.
+to just those alarm states for which the output channel is configured.
 This means that if a new notification appears or an existing notification
 changes state then the alarm channel may go active again.
 This mechanism allows the easy implementation of a 'silence alarm'
@@ -128,10 +125,14 @@ suggested methods which will be applied to Signal K keys for each
 possible alarm state when key metadata does not include an explicit
 method property.
 
-The configuration I use on my boat uses two outputs that operate relays
-which are in turn connected to visual (usb0.1) and audible (usb0.2)
-annunciators.
-A momentary switch allows suppression of the audible output.
+### Example configuration
+
+The configuration I use on my boat uses two relay outputs and a
+switch input:
+
+* 'electrical.switches.bank.usb0.1' operates an LED beacon;
+* 'electrical.switches.bank.usb0.2' operates an audible sounder;
+* 'electrical.switches.bank.0.12.state' senses a momentary panel switch.
 ```
 {
   "enabled": true,
