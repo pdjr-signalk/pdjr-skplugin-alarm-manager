@@ -123,104 +123,10 @@ If <em>on_state</em> is specified then the suppression will only happen
 if the arriving notification has a state equal to <em>on_state</em>.</p>
 </ul>
 
-**_Default methods..._** specifies the methods which should be applied
-to Signal K keys which do not have a method property in their
-metadata.
-
-<table>
-<tr><th>Property&nbsp;name</th><th>Value&nbsp;default</th><th>Description</th></tr>
-<tr>
-<td>digestPath</td>
-<td><pre>'plugins.alarm-manager.digest'</pre></td>
-<td>Signal K path to the alarm notification digest.</td>
-</tr>
-<tr>
-<td>ignorePaths</td>
-<td><pre>
-[
-  "design.",
-  "electrical.",
-  "network.",
-  "notifications.",
-  "plugins."
-]
-</pre></td>
-<td>Collection of pathnames or prefixes of pathnames which should not be monitored.</td>
-</tr>
-<tr>
-<td>outputs</td>
-<td><pre>[]</pre></td>
-<td>Collection of *output* objects (see below).</td>
-</tr>
-<tr>
-<td>defaultMethods</td>
-<td><pre>
-{
-  "alertMethod": [
-    "visual"
-  ],
-  "warnMethod": [
-    "visual"
-  ],
-  "alarmMethod": [
-    "sound",
-    "visual"
-  ],
-  "emergencyMethod": [
-    "sound",
-    "visual"
-  ]
-}
-</pre></td>
-<td>
-The Signal K specification allows the metadata for every path to
-specify the methods that should be used when raising a particular
-type of alarm for that path.
-These fallback defaults specify what methods should be used if the
-metadata method specification on a path is partial or entirely absent.
-</td>
-</tr>
-</table>
-
-Each *output* object has the following properties.
-<table>
-<tr><th>Property&nbsp;name</th><th>Value&nbsp;default</th><th>Description</th></tr>
-<tr>
-<td>path</td>
-<td>(none)</td>
-<td>
-Switch or notification path.
-Required.
-</td>
-</tr>
-<tr>
-<td>triggerStates</td>
-<td>(none)</td>
-<td>
-Array of alarm states which will trigger this output.
-Required.
-</td>
-</tr>
-<tr>
-<td>suppressionPath</td>
-<td>(none)</td>
-<td>
-Path signalling suppression of this output.
-Optional.
-</td>
-</tr>
-</table>
-
-Each item in the *output* array specifies a switch or notification
-*path* which will be updated in response to the presence or absence
-of one or more alarm notifications in one of the specified
-*triggerStates*.
-
-A momentary true value on *suppressionPath* will suppress output
-deriving from the current notification state, but output will be
-restored if a notification changes state to another value in
-*triggerStates* or a new notification appears with a state in
-*triggerStates*.
+**_Default methods..._** reveals and hides the specification of the
+suggested methods which will be applied to Signal K keys for each
+possible alarm state when key metadata does not include an explicit
+method property.
 
 The configuration I use on my boat uses two outputs that operate relays
 which are in turn connected to visual (usb0.1) and audible (usb0.2)
