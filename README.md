@@ -62,12 +62,12 @@ and/or operate alarm output channels then the plugin must be configured
 using the Signal K Dashboard's Plugin Config interface or by direct
 editing of the plugin's JSON configuration file.
 
-**Ignore paths** is a comma-separated list of Signal K paths or path
+**_Ignore paths_** is a comma-separated list of Signal K paths or path
 prefixes which specify keys which should be ignored by the plugin.
 Path prefixes should be used to exclude hierarchies of keys which are
 of no interest.
 
-**Digest path** specifies the Signal K path where the plugin will
+**_Digest path_** specifies the Signal K path where the plugin will
 maintain its alarm notification digest.
 
 **Outputs...** reveals and hides a list of configured output channels.
