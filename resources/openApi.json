@@ -172,7 +172,7 @@
         }
       },
       "digest": {
-        "description": "Object containing a collection of active alarm notifications\nunder plugin control.\nEach property name is a Signal K key on which an alarm\nnotification has been raised and to which the associated\nproperty value relates.\n",
+        "description": "Object containing a collection of properties each of which\ndescribes an active alarm notification.\nEach property has its name set to the Signal K key/path to\nwhich the alarm notification relates and its value set to\nthe full notification object.\n",
         "type": "object",
         "additionalProperties": {
           "type": "object",

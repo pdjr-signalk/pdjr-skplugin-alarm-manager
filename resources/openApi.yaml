@@ -166,11 +166,11 @@ components:
         type: string
     digest:
       description: |
-        Object containing a collection of active alarm notifications
-        under plugin control.
-        Each property name is a Signal K key on which an alarm
-        notification has been raised and to which the associated
-        property value relates.
+        Object containing a collection of properties each of which
+        describes an active alarm notification.
+        Each property has its name set to the Signal K key/path to
+        which the alarm notification relates and its value set to
+        the full notification object.
       type: object
       additionalProperties:
         type: object
