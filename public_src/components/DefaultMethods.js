@@ -8,11 +8,11 @@ export default function DefaultMethods({
   collapsibleTriggerStyle={},
   collapsiblePanelStyle={},
   collapsibleLabel='Default methods',
-  methodOptions=[],
+  notificationMethods=[],
   methods,
   onChangeCallback
 }) {
-  console.log("DefaultMethods: %s", JSON.stringify(methods));
+  //console.log("DefaultMethods: %s", JSON.stringify(methods));
   return(
     <FormGroup row>
       <Col>
@@ -24,8 +24,8 @@ export default function DefaultMethods({
               label='Alert'
               labelWidth={labelWidth}
               value={methods.alert.map(v => ({ label: v, value: v }))}
-              options={methodOptions}
-              onChangeCallback={(options) => onChangeCallback('alert', options)}
+              options={notificationMethods.map(v => ({ label: v, value: v }))}
+              onChangeCallback={(options) => onChangeCallback('alert', (options || []).map(v => v.value)) }
             />
             <FormField
               type='multiselect'
@@ -33,8 +33,8 @@ export default function DefaultMethods({
               label='Warn'
               labelWidth={labelWidth}
               value={methods.warn.map(v => ({ label: v, value: v }))}
-              options={methodOptions}
-              onChangeCallback={(options) => onChangeCallback('warn', options)}
+              options={notificationMethods.map(v => ({ label: v, value: v }))}
+              onChangeCallback={(options) => onChangeCallback('warn', (options || []).map(v => v.value))}
             />
             <FormField
               type='multiselect'
@@ -42,8 +42,8 @@ export default function DefaultMethods({
               label='Alarm'
               labelWidth={labelWidth}
               value={methods.alarm.map(v => ({ label: v, value: v }))}
-              options={methodOptions}
-              onChangeCallback={(options) => onChangeCallback('alarm', options)}
+              options={notificationMethods.map(v => ({ label: v, value: v }))}
+              onChangeCallback={(options) => onChangeCallback('alarm', (options || []).map(v => v.value))}
             />
             <FormField
               type='multiselect'
@@ -51,8 +51,8 @@ export default function DefaultMethods({
               label='Emergency'
               labelWidth={labelWidth}
               value={methods.emergency.map(v => ({ label: v, value: v }))}
-              options={methodOptions}
-              onChangeCallback={(options) => onChangeCallback('emergency', options)}
+              options={notificationMethods.map(v => ({ label: v, value: v }))}
+              onChangeCallback={(options) => onChangeCallback('emergency', (options || []).map(v => v.value))}
             />
           </div>
         </Collapsible>

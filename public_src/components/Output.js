@@ -23,7 +23,7 @@ export default function Output({
   onChangeCallback,
   onDeleteCallback
 }){
-  console.log("Output: %s", JSON.stringify(output));
+  //console.log("Output: %s", JSON.stringify(output));
   return(
     <div style={panelStyle}>
       <FormField
@@ -37,7 +37,7 @@ export default function Output({
       <FormField
         type='multiselect' label='Triggers' labelWidth={labelWidth} value={output.triggerStates.map(s => ({ label: s, value: s}))} 
         options={notificationStates.map(s => ({ label: s, value: s }))}
-        onChangeCallback={(v) => onChangeCallback(output.name, 'triggerStates', v.map(s => s.value))}
+        onChangeCallback={(v) => onChangeCallback(output.name, 'triggerStates', (v || []).map(s => s.value))}
       />
       <FormField
         type='text' label='Suppression path' labelWidth={labelWidth} value={output.suppressionPath}

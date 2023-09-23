@@ -15,7 +15,7 @@ export default function Outputs({
   onDeleteCallback,
   onCreateCallback
 }){
-  console.log("Outputs: %s", JSON.stringify(outputs));
+  //console.log("Outputs: %s", JSON.stringify(outputs));
   return(
     <FormGroup row>
       <Col>
@@ -44,4 +44,3 @@ export default function Outputs({
     </FormGroup>
   );
 }
-

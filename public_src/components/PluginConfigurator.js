@@ -7,7 +7,7 @@ import Outputs from './Outputs';
 const collapsibleTriggerStyle = { }
 const collapsiblePanelStyle = { background: '#f0f0f0', padding: '4px', marginTop: '3px' };
 const panelStyle = { background: '#e0e0e0', padding: '4px', marginBottom: '3px' };
-const methodOptions = [ { label: 'visual', value: 'visual'}, { label: 'sound', value: 'sound' }];
+const notificationMethods = [ 'visual', 'sound' ];
 const notificationStates = [ 'alert', 'warn', 'alarm', 'emergency' ];
 const labelWidth = '3';
 
@@ -135,7 +135,7 @@ class PluginConfigurator extends React.Component {
               collapsibleLabel='Default methods'
               collapsibleTriggerStyle={collapsibleTriggerStyle}
               collapsiblePanelStyle={collapsiblePanelStyle}
-              methodOptions={methodOptions}
+              notificationMethods={notificationMethods}
               methods={this.state.defaultMethods}
               onChangeCallback={this.setDefaultMethods}
             />
@@ -165,27 +165,20 @@ class PluginConfigurator extends React.Component {
     this.save({
       ignorePaths: this.state.ignorePaths.split(',').map(v => v.trim()),
       digestPath: this.state.digestPath,
-      defaultMethods: {
-        alert: this.state.alertMethods.map(v => v.value),
-        warn: this.state.warnMethods.map(v => v.value),
-        alarm: this.state.alarmMethods.map(v => v.value),
-        emergency: this.state.emergencyMethods.map(v => v.value)
-      }
+      outputs: this.stateOutputs,
+      defaultMethods: this.state.defaultMethods
     });
   }
 
   onCancel() {
     //console.log("onCancel:\n%s", JSON.stringify(this.options, null, 2));
     this.setState({ saveButtonDisabled: true, cancelButtonDisabled: true });
-    this.setState({ ignorePaths: this.props.configuration.ignorePaths });
+    this.setState({ ignorePaths: this.props.configuration.ignorePaths.join(', ') });
     this.setState({ digestPath: this.props.configuration.digestPath });
-    this.setState({ defaultAlertMethods: props.configuration.defaultMethods.alert.map(v => ({ label: v, value: v })) }),
-    this.setState({ defaultWarnMethods: props.configuration.defaultMethods.warn.map(v => ({ label: v, value: v })) }),
-    this.setState({ defaultAlarmMethods: props.configuration.defaultMethods.alarm.map(v => ({ label: v, value: v })) }),
-    this.setState({ defaultEmergencyMethods: props.configuration.defaultMethods.emergency.map(v => ({ label: v, value: v })) })
+    this.setState({ outputs: this.props.configuration.outputs }),
+    this.setState({ defaultMethods: this.props.configuration.defaultMethods })
   }
 
 }
 
 export default PluginConfigurator;
-  
