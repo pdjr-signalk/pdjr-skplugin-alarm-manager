@@ -315,7 +315,7 @@ module.exports = function (app) {
 
   function updateOutput(output, state) {
     var matches;
-    if ((matches = output.path.match(/^switches\.(.*)\.state$/)) && (matches == 2)) {
+    if ((matches = output.path.match(/^electrical\.switches\.(.*)\.state$/)) && (matches == 2)) {
       if (output.lastUpdateState != state) {
         app.debug("updating switch output '%s' to state %d", output.name, state);
         app.putSelfPath(path, state);

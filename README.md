@@ -123,6 +123,10 @@ If <em>on_state</em> is specified then the suppression will only happen
 if the arriving notification has a state equal to <em>on_state</em>.</p>
 </ul>
 
+**_Default methods..._** specifies the methods which should be applied
+to Signal K keys which do not have a method property in their
+metadata.
+
 <table>
 <tr><th>Property&nbsp;name</th><th>Value&nbsp;default</th><th>Description</th></tr>
 <tr>
