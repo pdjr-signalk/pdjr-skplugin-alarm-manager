@@ -70,38 +70,43 @@ of no interest.
 **_Digest path_** specifies the Signal K path where the plugin will
 maintain its alarm notification digest.
 
-**Outputs...** reveals and hides a list of configured output channels.
+**_Outputs..._** reveals and hides a list of configured output channels.
 Each output channel is defined by the following properties:
 <ul>
 <p>
-<strong>Name</strong> specifies the name of the output channel.</p>
+<strong><em>Name</em></strong> specifies the name of the output channel.</p>
 <p>
-<strong>Path</strong> specifies the Signal K path which should be
+<strong><em>Path</em></strong> specifies the Signal K path which should be
 updated with the output channel's state.
-The path specified can be either a path under 'electrical.switches.'
-or a path under 'notifications.'.</p>
+This can be either a path under 'electrical.switches.' or a path under
+'notifications.'.</p>
 <p>
 A path under 'electrical.switches.' will have its state set to 1
 when the output channel is triggered, otherwise 0.</p>
 <p>
-A path under 'notifications.' will receive a 'normal' notification
-when the output channel is triggered and the notification will be
-removed when the channel is not triggered.
-If you prefer a different state to 'normal' then a suffix of the
-form ':<em>state</em>' can be added to the specified path.
-If you would like a notification to be always present but with
-different states for triggered and not triggered, then a suffix
-of the form ':<em>triggered</em>:<em>not-triggered</em>' can be
-added to the specified path.
+A simple path under 'notifications.' should have the form:</p>
 <p>
-<strong>Trigger states</strong> specifies the alarm states which
-should operate the output channel when they are present in any
+<ul>
+<em>notification_path</em>[:<em>on_state</em>[:<em>off_state]]
+</ul></p>
+<em>notification_path</em> will receive a notification when the
+output channel is triggered.
+In the absence of <em>on_state</em> the state of the notification
+will be set to the most serious of the triggering notification
+states and otherwise to <em>on_state</em>.
+In the absence of <em>off_state</em> the notification will be
+deleted when the channel is not triggered and otherwise set to
+<em>off_state</off>.</p>
+<p>
+<strong><em>Trigger states</em></strong> specifies the alarm states
+which should operate the output channel when they are present in any
 active alarm notification.</p>
 <p>
-<strong>Suppression path</strong> specifies a Signal K path which
-can be used to suppress output on the channel.
+<strong><em>Suppression path</em></strong> specifies a Signal K path
+which can be used to suppress output on the channel.
 The path specified can be either a path under 'electrical.switches.'
-or a path under 'notifications.'.</p>
+or a path under 'notifications.'.
+</p>
 </ul>
 
 <table>
