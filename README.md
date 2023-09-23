@@ -96,7 +96,7 @@ will be set to the most serious of the triggering notification
 states and otherwise to <em>on_state</em>.
 In the absence of <em>off_state</em> the notification will be
 deleted when the channel is not triggered and otherwise set to
-<em>off_state</off>.</p>
+<em>off_state</em></off>.</p>
 <p>
 <strong><em>Trigger states</em></strong> specifies the alarm states
 which should operate the output channel when they are present in any
@@ -105,8 +105,22 @@ active alarm notification.</p>
 <strong><em>Suppression path</em></strong> specifies a Signal K path
 which can be used to suppress output on the channel.
 The path specified can be either a path under 'electrical.switches.'
-or a path under 'notifications.'.
-</p>
+or a path under 'notifications.'.</p>
+<p>
+The arrival of a momentary 1 on a path under 'electrical.switches.'
+will suppress the output channel until the arrival of a new
+triggering event.</p> 
+<p>
+A path under 'notifications.' should have the form:</p>
+<p>
+<ul>
+<em>notification_path</em>[:<em>on_state</em>]
+</ul></p>
+<p>
+The arrival of a momentary notification on 'notification_path' will
+suppress the output channel.
+If <em>on_state</em> is specified then the suppression will only happen
+if the arriving notification has a state equal to <em>on_state</em>.</p>
 </ul>
 
 <table>
