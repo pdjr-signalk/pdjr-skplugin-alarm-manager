@@ -8,7 +8,7 @@ conditions.
 __pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
 the management of alarm conditions in Signal K which arise when key
 values enter alarm zones defined by key metadata.
-The plugin provides four distinct services.
+The plugin provides three distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
 by issuing alarm notifications: thus, a value on '*key*' will raise a
@@ -42,10 +42,6 @@ I use this last feature to operate a visual indicator when a warning
 or alert state is present in Signal K and an audible alarm when an alarm
 or emergency state is present.
 
-Finally, the plugin implements a notification subscription service
-which will deliver push notifications of alarm events to subscribed
-devices.
-
 The plugin exposes an
 [HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarm-manager/)
 and contributes OpenAPI documentation of its interface to the Signal
@@ -59,7 +55,41 @@ and
 
 ## Configuration
 
-The plugin configuration has the following properties.
+The plugin will use a built-in, default, configuration to raise alarm
+notifications and maintain a notification digest. 
+If you want to optimise operation of the plugin for your environment
+and/or operate alarm output channels then the plugin must be configured
+using the Signal K Dashboard's Plugin Config interface or by direct
+editing of the plugin's JSON configuration file.
+
+**Ignore paths** is a comma-separated list of Signal K paths or path
+prefixes which specify keys which should be ignored by the plugin.
+Path prefixes should be used to exclude hierarchies of keys which are
+of no interest.
+
+**Digest path** specifies the Signal K path where the plugin will
+maintain its alarm notification digest.
+
+**Outputs...** reveals and hides a list of configured output channels.
+Each output channel is defined by the following properties:
+<ul>
+<p>
+<strong>Name</strong> name of the output channel.</p>
+<p>
+<strong>Path</strong> specifies the Signal K path which should be
+updated with this output channel's state.
+The path specified can be either a path under 'electrical.switches.'
+or a path under 'notifications.'.</p>
+<p>
+<strong>Trigger states</strong> specifies the alarm states which
+should operate this output channel when they are present in any
+of alarm notification.</p>
+<p>
+<strong>Suppression path</strong> specifies a Signal K path which
+can be used to suppress output on this channel.
+The path specified can be either a path under 'electrical.switches.'
+or a path under 'notifications.'.</p>
+</ul>
 
 <table>
 <tr><th>Property&nbsp;name</th><th>Value&nbsp;default</th><th>Description</th></tr>
