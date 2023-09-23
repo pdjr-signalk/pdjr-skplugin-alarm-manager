@@ -21,6 +21,8 @@ class PluginConfigurator extends React.Component {
     this.state = {
       saveButtonDisabled: true,
       cancelButtonDisabled: true,
+      subscribeButtonDisabled: true,
+      unsubscribeButtonDisabled: true,
       ignorePaths: props.configuration.ignorePaths.join(','),
       digestPath: props.configuration.digestPath,
       outputs: props.configuration.outputs,
@@ -34,7 +36,22 @@ class PluginConfigurator extends React.Component {
     this.deleteOutput = this.deleteOutput.bind(this);
     this.createOutput = this.createOutput.bind(this);
     this.setDefaultMethods = this.setDefaultMethods.bind(this);
+
+    if (('serviceWorker' in navigator) && ('PushManager' in window)) {
+      navigator.serviceWorker.register('./service-worker.js').then(serviceWorkerRegistration => {
+        console.info('Service worker was registered.');
+        console.info({serviceWorkerRegistration});
+        this.setState({ subscribeButtonDisabled: false });
+      }).catch(error => {
+        console.error('An error occurred while registering the service worker.');
+        console.error(error);
+      });
+    } else {
+      console.error('Browser does not support service workers or push messages.');
+    }
+
   }
+  
 
   setIgnorePaths(text) {
     this.setState({ ignorePaths: text.trim(), saveButtonDisabled: false, cancelButtonDisabled: false });
@@ -149,6 +166,8 @@ class PluginConfigurator extends React.Component {
                 <Button size='sm' color='primary' disabled={this.state.cancelButtonDisabled} onClick={(e) => { e.preventDefault(); this.onCancel(); }}><i className='fa fa-ban' /> Cancel </Button>
               </ButtonToolbar>
               <ButtonToolbar>
+                <Button size='sm' color='primary' disabled={this.state.unsubscribeButtonDisabled} onClick={(e) => { e.preventDefault(); this.onUnsubscribe(); }}><i className='fa fa-save' /> Unsubscribe </Button>&nbsp;
+                <Button size='sm' color='primary' disabled={this.state.subscribeButtonDisabled} onClick={(e) => { e.preventDefault(); this.onSubscribe(); }}><i className='fa fa-ban' /> Subscribe </Button>
               </ButtonToolbar>
             </ButtonToolbar>
           </Col>
@@ -178,6 +197,17 @@ class PluginConfigurator extends React.Component {
     this.setState({ outputs: this.props.configuration.outputs }),
     this.setState({ defaultMethods: this.props.configuration.defaultMethods })
   }
+
+  onSubscribe() {
+    this.setState({ subscribeButtonDisabled: true });
+
+  }
+
+  onUnsubscribe() {
+    this.setState({ unsubscribeButtonDisabled: true });
+
+  }
+  
 
 }
 
