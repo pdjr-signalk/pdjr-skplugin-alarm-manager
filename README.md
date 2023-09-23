@@ -87,7 +87,7 @@ when the output channel is triggered, otherwise 0.</p>
 A simple path under 'notifications.' should have the form:</p>
 <p>
 <ul>
-<em>notification_path</em>[:<em>on_state</em>[:<em>off_state]]
+<em>notification_path</em>[:<em>on_state</em>[:<em>off_state</em>]]
 </ul></p>
 <em>notification_path</em> will receive a notification when the
 output channel is triggered.
