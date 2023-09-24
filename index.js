@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+const crypto = require("crypto");
+const webpush = require("web-push");
 const Log = require("./lib/signalk-liblog/Log.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
 
@@ -119,72 +121,14 @@ const PLUGIN_SCHEMA = {
     }
   }
 };
-const PLUGIN_UISCHEMA = {
-  "ignorePaths": {
-    "ui:field": "collapsible",
-    "collapse": {
-      "field": "ArrayField",
-      "wrapClassName": "field-object"
-    },
-    "ui:options": {
-      "removable": true,
-      "addable": true,
-      "orderable": false
-    }
-  },
-  "digestPath": {
-    "classNames": "col-sm-12"
-  },
-  "outputs": {
-    "ui:field": "collapsible",
-    "collapse": {
-      "field": "ArrayField",
-      "wrapClassName": "panel-group"
-    },
-    "ui:options": {
-      "removable": true,
-      "addable": true,
-      "orderable": false
-    },
-    "items": {
-      "name": {
-      },
-      "path": {
-      },
-      "triggerStates": {
-        "ui:widget": "checkboxes",
-        "ui:options": { "inline": true }
-      },
-      "suppressionPath": {
-      }
-    }
-  },
-  "defaultMethods": {
-    "ui:field": "collapsible",
-    "collapse": {
-      "field": "ObjectField",
-      "wrapClassName": "field-object"
-    },
-    "alertMethod": {
-      "ui:widget": "checkboxes",
-      "ui:options": { "inline": true }
-    },
-    "warnMethod": {
-      "ui:widget": "checkboxes",
-      "ui:options": { "inline": true }
-    },
-    "alarmMethod": {
-      "ui:widget": "checkboxes",
-      "ui:options": { "inline": true }
-    },
-    "emergencyMethod": {
-      "ui:widget": "checkboxes",
-      "ui:options": { "inline": true }
-    }
-  }
-};
+const PLUGIN_UISCHEMA = {};
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
+const VAPID_DETAILS = {
+  publicKey: process.env.VAPID_PUBLIC_KEY,
+  privateKey: process.env.VAPID_PRIVATE_KEY,
+  subject: process.env.VAPID_SUBJECT
+};
 
 module.exports = function (app) {
   var plugin = {};
@@ -258,6 +202,9 @@ module.exports = function (app) {
     router.get('/outputs/', handleRoutes);
     router.get('/output/:name', handleRoutes);
     router.patch('/suppress/:name', handleRoutes);
+    router.post('/subscribe/:id', handleRoutes);
+    router.delete('/unsubscribe/:id', handleRoutes);
+    router.patch('/notify/:id', handleRoutes);
   }
 
   plugin.getOpenApi = function() {
@@ -446,18 +393,80 @@ module.exports = function (app) {
             throw new Error("404");
           }
           break;
+        case '/subscribe':
+          var subscriberId = req.params.id;
+          var subscription = req.body;
+          app.debug("received subscribe request for %s (%s)", subscriberId, JSON.stringify(subscription));
+          if ((typeof subscription === 'object') && (!Array.isArray(subscription)) && (subscriberId)) {
+            app.resourcesApi.setResource(plugin.id, subscriberId, subscription, 'resources-provider').then(() => {
+              expressSend(res, 200, null, req.path);
+            }).catch((e) => {
+              throw new Error("503");
+            });
+          } else {
+            throw new Error("400");
+          }
+          break;
+        case '/unsubscribe':
+          var subscriberId = req.params.id;
+          app.debug("received unsubscribe request for %s", subscriberId);
+          if (subscriberId) {
+            app.resourcesApi.deleteResource(plugin.id, subscriberId, 'resources-provider').then(() => {
+              expressSend(res, 200, null, req.path);
+            }).catch((e) => {
+              console.log(e.message);
+              throw new Error("404");
+            });
+          } else {
+            throw new Error("400");
+          }
+          break;
+        case '/notify':
+          var subscriberId = req.params.id;
+          app.debug("received notify request for %s", subscriberId);
+          if (subscriberId) {
+            app.resourcesApi.getResource(plugin.id, subscriberId, 'resources-provider').then((subscription) => {
+              notify([subscription]);
+              expressSend(res, 200, null, req.path);
+            }).catch((e) => {
+              console.log(e.message);
+              throw new Error("404");
+            });
+          } else {
+            throw new Error("400");
+          }
+          break;
       }
     } catch(e) {
       expressSend(res, ((/^\d+$/.test(e.message))?parseInt(e.message):500), null, req.path);
     }
 
     function expressSend(res, code, body = null, debugPrefix = null) {
-      const FETCH_RESPONSES = { 200: null, 201: null, 404: "not found", 500: "internal server error" };
+      const FETCH_RESPONSES = { 200: null, 201: null, 400: "bad request", 404: "not found", 503: "service unavailable (try again later)", 500: "internal server error" };
       res.status(code).send((body)?body:((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null));
       if (debugPrefix) app.debug("%s: %d %s", debugPrefix, code, ((body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)));
       return(false);
     }
+  }
 
+  function notify(subscriptions) {
+    const notification = JSON.stringify({
+      title: "Hello, Notifications!",
+      options: { body: `ID: ${Math.floor(Math.random() * 100)}` }
+    });
+
+    subscriptions.forEach(subscription => {
+      const subscriberId = subscription.endpoint.slice(-8);
+      try {
+        webpush.sendNotification(subscription, notification, { TTL: 10000, vapidDetails: VAPID_DETAILS }).then(result => {
+          app.debug("notification sent to %s (%s)", subscriberId, result.statusCode);
+        }).catch(error => {
+          app.debug("notification failure for subscriber %s (%s)", subscriberId, error);
+        });
+      } catch(e) {
+        app.debug("webpush failed (%s)", e.message);
+      }
+    });
   }
 
   return(plugin);
