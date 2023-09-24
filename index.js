@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+const _ = require("lodash");
 const crypto = require("crypto");
 const webpush = require("web-push");
 const Log = require("./lib/signalk-liblog/Log.js");
@@ -73,6 +74,39 @@ const PLUGIN_SCHEMA = {
         "required" : [ "name", "path", "triggerStates" ],
         "default": []
       }
+    },
+    "pushNotifications": {
+      "title": "Push notifications",
+      "description": "Issue push notifications when alarm conditions appear",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "title": "Enable push notifications",
+          "description": "Issue push notifications when alarm conditions appear",
+          "type": "boolean"
+        },
+        "triggerStates": {
+          "title": "Trigger states",
+          "description": "Alarm states which will raise push notifications",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [ "warn", "alert", "alarm", "emergency" ]
+          },
+          "uniqueItems": true
+        },
+        "resourcesProviderId": {
+          "title": "Resources provider",
+          "description": "Resources provider used to persist notification subscriptions",
+          "type": "string"
+        },
+        "resourceType": {
+          "title": "Resources type",
+          "description": "Resources type used to persist notification subscriptions",
+          "type": "string"
+        }
+      },
+      "default": { "enabled": false, "triggerStates": [ "emergency" ], "resourcesProviderId": "resources-provider", "resourceType": "alarm-manager" }
     },
     "defaultMethods" : {
       "title": "Default methods",
@@ -150,12 +184,13 @@ module.exports = function (app) {
 
     // Make plugin.options to get scope outside of just start(),
     // populating defaults and saving to configuration.
-    plugin.options = {};
-    plugin.options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
-    plugin.options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
-    plugin.options.outputs = options.outputs || plugin.schema.properties.outputs.default;
-    plugin.options.defaultMethods = options.defaultMethods || plugin.schema.properties.defaultMethods.default;
-    app.savePluginOptions(plugin.options, () => { app.debug("saved plugin options") });
+    options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
+    options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
+    options.outputs = options.outputs || _.cloneDeep(plugin.schema.properties.outputs.default);
+    options.pushNotifications = { ...plugin.schema.properties.pushNotifications.default, ...(options.pushNotifications || {})};
+    options.defaultMethods = { ...plugin.schema.properties.defaultMethods.default, ...(options.defaultMethods || {})};
+    plugin.options = options;
+    app.debug("using configuration:\n%s", JSON.stringify(plugin.options, null, 2));
 
     // Subscribe to any suppression paths configured for the output
     // channels and persist these across the lifetime of the plugin.
@@ -183,6 +218,7 @@ module.exports = function (app) {
           alarmPaths = availableAlarmPaths;
           if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
           log.N("monitoring %d alarm path%s", alarmPaths.length, (alarmPaths.length == 1)?"":"s");
+          if (plugin.options.pushNotifications.enabled === true) log.N("push notifications are enabled for %s", plugin.options.pushNotifications.triggerStates, false);
           startAlarmMonitoring(alarmPaths, notificationDigest, unsubscribes);
         }
       }
@@ -232,10 +268,11 @@ module.exports = function (app) {
         var notification = getAlarmNotification(v, zones);
         if (notification) { // Value is alarming...
           if ((!digest[path]) || (digest[path].notification.state != notification.state)) {
-            app.debug("issuing notification on '%s'", path);
+            app.debug("issuing '%s' notification on '%s'", notification.state, path);
             digest[path] = { "notification": notification, "suppressedOutputs": [] };
             (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
             updated = true;
+            if ((plugin.options.pushNotifications.enabled) && (plugin.options.pushNotifications.triggerStates.includes(notification.state))) issuePushNotificationsToSubscribers(path, notification);
           }
         } else {
           if (digest[path]) {
@@ -356,6 +393,16 @@ module.exports = function (app) {
     return(true);
   }
 
+  function issuePushNotificationsToSubscribers(path, notification) {
+    app.debug("generatePushNotifications(%s, %s)...", path, JSON.stringify(notification));
+    app.resourcesApi.listResources(plugin.options.pushNotifications.resourceType, {}, plugin.options.pushNotifications.resourcesProviderId).then((metadata) => {
+      var subscribers = (Object.keys(metadata || {})).map(key => metadata[key]);
+      issuePushNotifications(subscribers, path, notification);
+    }).catch((e) => {
+      app.debug("error obtaining subscription list (%s)", e.message);
+    })
+  }
+
   /**
    * Callback handler for all Express routes.
    * 
@@ -398,7 +445,12 @@ module.exports = function (app) {
           var subscription = req.body;
           app.debug("received subscribe request for %s (%s)", subscriberId, JSON.stringify(subscription));
           if ((typeof subscription === 'object') && (!Array.isArray(subscription)) && (subscriberId)) {
-            app.resourcesApi.setResource(plugin.id, subscriberId, subscription, 'resources-provider').then(() => {
+            app.resourcesApi.setResource(
+              plugin.options.pushNotifications.resourceType,
+              subscriberId,
+              subscription,
+              plugin.options.pushNotifications.resourcesProviderId
+            ).then(() => {
               expressSend(res, 200, null, req.path);
             }).catch((e) => {
               throw new Error("503");
@@ -411,7 +463,11 @@ module.exports = function (app) {
           var subscriberId = req.params.id;
           app.debug("received unsubscribe request for %s", subscriberId);
           if (subscriberId) {
-            app.resourcesApi.deleteResource(plugin.id, subscriberId, 'resources-provider').then(() => {
+            app.resourcesApi.deleteResource(
+              plugin.options.pushNotifications.resourceType,
+              subscriberId,
+              plugin.options.pushNotifications.resourcesProviderId
+            ).then(() => {
               expressSend(res, 200, null, req.path);
             }).catch((e) => {
               console.log(e.message);
@@ -425,7 +481,11 @@ module.exports = function (app) {
           var subscriberId = req.params.id;
           app.debug("received notify request for %s", subscriberId);
           if (subscriberId) {
-            app.resourcesApi.getResource(plugin.id, subscriberId, 'resources-provider').then((subscription) => {
+            app.resourcesApi.getResource(
+              plugin.options.pushNotifications.resourceType,
+              subscriberId,
+              plugin.options.pushNotifications.resourcesProviderId
+            ).then((subscription) => {
               notify([subscription]);
               expressSend(res, 200, null, req.path);
             }).catch((e) => {
@@ -449,16 +509,16 @@ module.exports = function (app) {
     }
   }
 
-  function notify(subscriptions) {
-    const notification = JSON.stringify({
-      title: "Hello, Notifications!",
-      options: { body: `ID: ${Math.floor(Math.random() * 100)}` }
+  function issuePushNotifications(subscribers, path, notification) {
+    const pushNotification = JSON.stringify({
+      title: notification.state.toUpperCase() + " Notification!",
+      options: { body: path }
     });
 
-    subscriptions.forEach(subscription => {
-      const subscriberId = subscription.endpoint.slice(-8);
+    subscribers.forEach(subscriber => {
+      const subscriberId = subscriber.endpoint.slice(-8);
       try {
-        webpush.sendNotification(subscription, notification, { TTL: 10000, vapidDetails: VAPID_DETAILS }).then(result => {
+        webpush.sendNotification(subscriber, pushNotification, { TTL: 10000, vapidDetails: VAPID_DETAILS }).then(result => {
           app.debug("notification sent to %s (%s)", subscriberId, result.statusCode);
         }).catch(error => {
           app.debug("notification failure for subscriber %s (%s)", subscriberId, error);
