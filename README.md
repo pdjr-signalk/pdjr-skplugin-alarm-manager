@@ -187,18 +187,23 @@ To get things working you must.
    (built-in)' plugin to support the 'alarm-manager' custom resource
    type.
 
-3. If you have a UI and web-browser on the same device as your Signal
-   server then you can check that things are working by opening the
-   plugin's Webapp, clicking the 'Subscribe' button allowing
-   notifications from 'localhost'.
-   If you then click the 'Test' button you should receive a push
-   notification which confirms that the plugin is working.
+3. In the unlikely circumstance that you have a UI and web-browser on
+   the same device as your Signal server then you can check that things
+   are working by opening the plugin's Webapp, clicking the 'Subscribe'
+   and button and allowing notifications from 'localhost' in the
+   ensuing, browser-generated, dialogue.
+   Once subscribed, if you then click the 'Test' button you should
+   receive a push notification which confirms that the plugin is working.
 
    Repeating this procedure from a device other than the Signal K
    server will fail because the Signal K server and client are unable
-   to authenticate one-another without Internet access.
+   to authenticate one-another without Internet access and the benefits
+   that come with 'real' IP addresses.
    One way around this problem is to manually provide the required
-   authentication certficates.
+   authentication certficates and there are few, mostly esoteric, ways
+   of achieving this.
+
+4. 
 
 ## Operating principle
 
