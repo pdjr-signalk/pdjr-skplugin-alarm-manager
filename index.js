@@ -393,22 +393,10 @@ module.exports = function (app) {
     return(true);
   }
 
-  function issuePushNotificationsToSubscribers(path, notification) {
-    app.debug("generatePushNotifications(%s, %s)...", path, JSON.stringify(notification));
-    app.resourcesApi.listResources(plugin.options.pushNotifications.resourceType, {}, plugin.options.pushNotifications.resourcesProviderId).then((metadata) => {
-      var subscribers = (Object.keys(metadata || {})).map(key => metadata[key]);
-      issuePushNotifications(subscribers, path, notification);
-    }).catch((e) => {
-      app.debug("error obtaining subscription list (%s)", e.message);
-    })
-  }
-
-  /**
-   * Callback handler for all Express routes.
-   * 
-   * @param {*} req - router req parameter.
-   * @param {*} res - router res parameter.
+  /********************************************************************
+   * EXPRESS ROUTE HANDLING
    */
+
   function handleRoutes(req, res) {
     app.debug("processing %s request on %s", req.method, req.path);
     try {
@@ -507,6 +495,20 @@ module.exports = function (app) {
       if (debugPrefix) app.debug("%s: %d %s", debugPrefix, code, ((body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)));
       return(false);
     }
+  }
+
+  /********************************************************************
+   * PUSH NOTIFICATION HANDLING
+   */
+
+  function issuePushNotificationsToSubscribers(path, notification) {
+    app.debug("generatePushNotifications(%s, %s)...", path, JSON.stringify(notification));
+    app.resourcesApi.listResources(plugin.options.pushNotifications.resourceType, {}, plugin.options.pushNotifications.resourcesProviderId).then((metadata) => {
+      var subscribers = (Object.keys(metadata || {})).map(key => metadata[key]);
+      issuePushNotifications(subscribers, path, notification);
+    }).catch((e) => {
+      app.debug("error obtaining subscription list (%s)", e.message);
+    })
   }
 
   function issuePushNotifications(subscribers, path, notification) {
