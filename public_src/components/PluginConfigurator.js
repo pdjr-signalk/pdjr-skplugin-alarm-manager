@@ -3,6 +3,7 @@ import { Col, Form, FormGroup, ButtonToolbar, Button } from 'reactstrap';
 import FormField from './FormField';
 import DefaultMethods from './DefaultMethods';
 import Outputs from './Outputs';
+import PushNotifications from './PushNotifications';
 
 const collapsibleTriggerStyle = { }
 const collapsiblePanelStyle = { background: '#f0f0f0', padding: '4px', marginTop: '3px' };
@@ -23,9 +24,10 @@ class PluginConfigurator extends React.Component {
       cancelButtonDisabled: true,
       subscribeButtonDisabled: true,
       unsubscribeButtonDisabled: true,
-      ignorePaths: props.configuration.ignorePaths.join(','),
+      ignorePaths: props.configuration.ignorePaths,
       digestPath: props.configuration.digestPath,
       outputs: props.configuration.outputs,
+      pushNotifications: props.configuration.pushNotifications,
       defaultMethods: props.configuration.defaultMethods
     }
 
@@ -36,25 +38,12 @@ class PluginConfigurator extends React.Component {
     this.deleteOutput = this.deleteOutput.bind(this);
     this.createOutput = this.createOutput.bind(this);
     this.setDefaultMethods = this.setDefaultMethods.bind(this);
-
-    if (('serviceWorker' in navigator) && ('PushManager' in window)) {
-      navigator.serviceWorker.register('./service-worker.js').then(serviceWorkerRegistration => {
-        console.info('Service worker was registered.');
-        console.info({serviceWorkerRegistration});
-        this.setState({ subscribeButtonDisabled: false });
-      }).catch(error => {
-        console.error('An error occurred while registering the service worker.');
-        console.error(error);
-      });
-    } else {
-      console.error('Browser does not support service workers or push messages.');
-    }
-
+    this.setPushNotifications = this.setPushNotifications.bind(this);
   }
   
 
   setIgnorePaths(text) {
-    this.setState({ ignorePaths: text.trim(), saveButtonDisabled: false, cancelButtonDisabled: false });
+    this.setState({ ignorePaths: text.split(',').map(v => v.trim()).sort(), saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
   setDigestPath(text) {
@@ -110,6 +99,14 @@ class PluginConfigurator extends React.Component {
     this.setState({ defaultMethods: newDefaultMethods, saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
+  setPushNotifications(property, value) {
+    var newPushNotifications = {};
+    Object.keys(this.state.pushNotifications).forEach(key => {
+      newPushNotifications[key] = (key === property)?value:this.state.pushNotifications[key];
+    });
+    this.setState({ pushNotifications: newPushNotifications, saveButtonDisabled: false, cancelButtonDisabled: false });
+  }
+
   render() {
     return(
       <Form className='square rounded border' style={{ padding: '5px' }}>
@@ -120,7 +117,7 @@ class PluginConfigurator extends React.Component {
               name='ignorePaths'
               label='Ignore paths'
               labelWidth={labelWidth}
-              value={this.state.ignorePaths}
+              value={this.state.ignorePaths.join(', ')}
               rows='2'
               wrap='on'
               style={{ width: '100%' }}
@@ -147,6 +144,15 @@ class PluginConfigurator extends React.Component {
               onDeleteCallback={this.deleteOutput}
               onCreateCallback={this.createOutput}
               />
+            <PushNotifications
+              labelWidth={labelWidth}
+              collapsibleTriggerStyle={collapsibleTriggerStyle}
+              collapsiblePanelStyle={collapsiblePanelStyle}
+              collapsibleLabel='Push notifications'
+              notificationStates={notificationStates}
+              pushNotifications={this.state.pushNotifications}
+              onChangeCallback={this.setPushNotifications}
+            />
             <DefaultMethods
               labelWidth={labelWidth}
               collapsibleLabel='Default methods'

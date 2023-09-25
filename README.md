@@ -8,7 +8,7 @@ conditions.
 __pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
 the management of alarm conditions in Signal K which arise when key
 values enter alarm zones defined by key metadata.
-The plugin provides three distinct services.
+The plugin provides four distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
 by issuing alarm notifications: thus, a value on '*key*' will raise a
@@ -22,7 +22,7 @@ This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
 Thirdly, the plugin operates zero or more suppressable output channels
-each of which is configured to react to one or more alrm state triggers.
+each of which is configured to react to one or more alarm state triggers.
 When an alarm notification with one of the configured trigger states is
 raised the output channel is enabled.
 
@@ -30,14 +30,22 @@ An active output channel can be suppressed by supplying a transient
 true value on a configured key.
 Suppression is applied at the digest notification level and applies
 to just those alarm states for which the output channel is configured.
-This means that if a new notification appears or an existing notification
-changes state then the alarm channel may go active again.
+This means that if a new notification appears or an existing
+notification adopts a new trigger state then the alarm output channel
+will go active again.
 This mechanism allows the easy implementation of a 'silence alarm'
 function on selected output channels.
 
-I use this last feature to operate a visual indicator when a warning
-or alert state is present in Signal K and an audible alarm when an alarm
-or emergency state is present.
+Finally and optionally, the plugin will attempt to send push
+notifications to subscribed devices.
+This feature is disabled by default and full functionality will
+require non-trivial configuration of the Signal K host operating
+environment.
+See the discussion below.
+
+The plugin provides a simple Wepapp that summarises the current
+alarm state and supports subscription, unsubscription and testing of
+the push notification feature.
 
 The plugin exposes an
 [HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarm-manager/)
@@ -127,6 +135,10 @@ method property.
 
 ### Example configuration
 
+I use this last feature to operate a visual indicator when a warning
+or alert state is present in Signal K and an audible alarm when an alarm
+or emergency state is present.
+
 The configuration I use on my boat uses two relay outputs and a
 switch input:
 
@@ -153,6 +165,40 @@ switch input:
   }
 }
 ```
+
+### Push notifications
+
+Getting a pop-up notification on an arbitrary device when an alarm
+notification is raised in Signal K is a non-trivial problem, mainly
+because the push notification protocols were developed on the
+misplaced assumption that the demand for these features would only
+arise on Internet exposed devices with SSL security features and,
+by implication, the certification mechanisms that are generally only
+easily available in the Internet domain and not on isolated LANs.
+
+To get things working you must.
+
+1. Configure Signal K to operate using SSL. Run 'signalk-server-setup'
+   and enter 'y' in response to the 'Do you want to enable SSL?'
+   prompt.
+
+2. Configure storage for push notification subscriptions.
+   Go to the Signal K dashboard and configure the 'Resources Provider
+   (built-in)' plugin to support the 'alarm-manager' custom resource
+   type.
+
+3. If you have a UI and web-browser on the same device as your Signal
+   server then you can check that things are working by opening the
+   plugin's Webapp, clicking the 'Subscribe' button allowing
+   notifications from 'localhost'.
+   If you then click the 'Test' button you should receive a push
+   notification which confirms that the plugin is working.
+
+   Repeating this procedure from a device other than the Signal K
+   server will fail because the Signal K server and client are unable
+   to authenticate one-another without Internet access.
+   One way around this problem is to manually provide the required
+   authentication certficates.
 
 ## Operating principle
 

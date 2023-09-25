@@ -147,10 +147,10 @@ const PLUGIN_SCHEMA = {
         }
       },
       "default": {
-        "alertMethod": [ "visual" ],
-        "warnMethod": [ "visual" ],
-        "alarmMethod": [ "sound", "visual" ],
-        "emergencyMethod": [ "sound", "visual" ]
+        "alert": [ "visual" ],
+        "warn": [ "visual" ],
+        "alarm": [ "sound", "visual" ],
+        "emergency": [ "sound", "visual" ]
       }
     }
   }
@@ -186,10 +186,11 @@ module.exports = function (app) {
     // populating defaults and saving to configuration.
     options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
     options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
-    options.outputs = options.outputs || _.cloneDeep(plugin.schema.properties.outputs.default);
+    options.outputs = options.outputs || plugin.schema.properties.outputs.default;
     options.pushNotifications = { ...plugin.schema.properties.pushNotifications.default, ...(options.pushNotifications || {})};
     options.defaultMethods = { ...plugin.schema.properties.defaultMethods.default, ...(options.defaultMethods || {})};
     plugin.options = options;
+    app.savePluginOptions(plugin.options, ()=>{});
     app.debug("using configuration:\n%s", JSON.stringify(plugin.options, null, 2));
 
     // Subscribe to any suppression paths configured for the output
@@ -271,8 +272,13 @@ module.exports = function (app) {
             app.debug("issuing '%s' notification on '%s'", notification.state, path);
             digest[path] = { "notification": notification, "suppressedOutputs": [] };
             (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
+            if (plugin.options.pushNotifications.enabled) {
+              if (plugin.options.pushNotifications.triggerStates.includes(notification.state)) {
+                log.N("issueing push notifications");
+                issuePushNotificationsToSubscribers(path, v, notification);
+              }
+            }
             updated = true;
-            if ((plugin.options.pushNotifications.enabled) && (plugin.options.pushNotifications.triggerStates.includes(notification.state))) issuePushNotificationsToSubscribers(path, notification);
           }
         } else {
           if (digest[path]) {
@@ -501,20 +507,25 @@ module.exports = function (app) {
    * PUSH NOTIFICATION HANDLING
    */
 
-  function issuePushNotificationsToSubscribers(path, notification) {
-    app.debug("generatePushNotifications(%s, %s)...", path, JSON.stringify(notification));
+  function issuePushNotificationsToSubscribers(path, value, notification) {
+    app.debug("generatePushNotifications(%s, ,%s, %s)...", path, value, JSON.stringify(notification));
     app.resourcesApi.listResources(plugin.options.pushNotifications.resourceType, {}, plugin.options.pushNotifications.resourcesProviderId).then((metadata) => {
       var subscribers = (Object.keys(metadata || {})).map(key => metadata[key]);
-      issuePushNotifications(subscribers, path, notification);
+      issuePushNotifications(subscribers, path, value, notification);
     }).catch((e) => {
       app.debug("error obtaining subscription list (%s)", e.message);
     })
   }
 
-  function issuePushNotifications(subscribers, path, notification) {
+  function issuePushNotifications(subscribers, path, value, notification) {
+    app.debug("issuePushNotifications(%s, %s, %s, %s", JSON.stringify(subscribers), path, value, JSON.stringify(notification));
     const pushNotification = JSON.stringify({
-      title: notification.state.toUpperCase() + " Notification!",
-      options: { body: path }
+      title: notification.state.toUpperCase() + " on " + path,
+      options: {
+        body: notification.message + "\n" + "Trigger value was " + value + ".",
+        timestamp: Math.floor(new Date().getTime() / 1000),
+        id: path
+      }
     });
 
     subscribers.forEach(subscriber => {
