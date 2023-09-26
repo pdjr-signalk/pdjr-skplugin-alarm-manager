@@ -177,45 +177,37 @@ and access to fully-connected DNS and security certification services.
 Devices on a private LAN, even one with a reliable Internet connection,
 tend to have 'local' IP addresses and so cannot use public DNS and SSL
 certification services.
-We have to do some work.
+We have to do some work:
 
-Firstly, we need to configure Signal K to operate using SSL.
-Run 'signalk-server-setup' and enter 'y' in response to the 'Do you want
-to enable SSL?' prompt.
+1. Configure Signal K to operate using SSL.
+   Run 'signalk-server-setup' and enter 'y' in response to the 'Do you want
+   to enable SSL?' prompt.
 
-We then need to provide the plugin with a persistent data store where
-it can save push notification subscriptions.
-The plugin uses the services of a Signal K resources provider and by
-default is configured to use Signal K's built-in 'resources-provider'
-plugin.
-Go to the Signal K dashboard and configure the 'Resources Provider
-(built-in)' plugin to support the 'alarm-manager' custom resource
-type.
+2. Create a persistent data store where the plugin can save push
+   notification subscriptions.
+   Go to the Signal K dashboard and configure the 'Resources Provider
+   (built-in)' plugin to support the 'alarm-manager' custom resource
+   type.
 
-Finally, enable 'Push notifications' in the plugin configuration.
+3. Turn on push notifications.
+   Enable 'Push notifications' in the plugin configuration.
 
 At this point the plugin is able to manage subscriptions to the push
 notification service and can raise push notification when alarm
 conditions arise.
 Without SSL this feature is only accessible from the Signal K server
-host, but in the unlikely circumstance that you have a UI and web-browser
+host, but in the circumstance that you have a UI and web-browser
 on the same device as your Signal server then you can check that things
-are working.
-Opening the plugin's Webapp, click the 'Subscribe' button and allowing
-notifications from 'localhost' in the ensuing, browser-generated,
-dialogue.
+are working by opening the plugin's Webapp, clicking the 'Subscribe'
+button and allowing notifications from 'localhost' in the ensuing,
+browser-generated, dialogue.
 Once subscribed, if you then click the 'Test' button you should
-receive a push notification which confirms that the plugin is working.
+receive a push notification confirming that the plugin is able
+to communicate with a trusted peer.
+Repeating this procedure from a device other than the Signal K
+server will fail because the Signal K server and client are unable
+to authenticate one-another using SSL.
 
-   Repeating this procedure from a device other than the Signal K
-   server will fail because the Signal K server and client are unable
-   to authenticate one-another without Internet access and the benefits
-   that come with 'real' IP addresses.
-   One way around this problem is to manually provide the required
-   authentication certficates and there are few, mostly esoteric, ways
-   of achieving this.
-
-4. 
 
 ## Operating principle
 
