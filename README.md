@@ -169,15 +169,18 @@ switch input:
 ### Push notifications
 
 Getting a pop-up notification on an arbitrary device when an alarm
-notification is raised in Signal K is a non-trivial problem, mainly
-because the push notification protocols were developed on the
-misplaced assumption that the demand for these features would only
-arise on Internet exposed devices with SSL security features and,
-by implication, the certification mechanisms that are generally only
-easily available in the Internet domain and not on isolated LANs.
+notification is raised in Signal K is a non-trivial problem.
+Push notification protocols require SSL and in the real world the
+use of SSL relies on devices having 'real' IP addresses and access
+to a fully-connected DNS service and Internet-based certification
+services.
+Devices on a private LAN with perhaps intermittent Internet access
+cannot easily use SSL, but here is one way which works.
 
-To get things working you must.
-
+The plugin persists push notification user/device subscriptions
+using a Signal K resources provider.
+By default it uses Signal K's built-in 'resources-provider'
+plugin.
 1. Configure Signal K to operate using SSL. Run 'signalk-server-setup'
    and enter 'y' in response to the 'Do you want to enable SSL?'
    prompt.
