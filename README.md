@@ -171,32 +171,41 @@ switch input:
 Getting a pop-up notification on an arbitrary device when an alarm
 notification is raised in Signal K is a non-trivial problem.
 Push notification protocols require SSL and in the real world the
-use of SSL relies on devices having 'real' IP addresses and access
-to a fully-connected DNS service and Internet-based certification
-services.
-Devices on a private LAN with perhaps intermittent Internet access
-cannot easily use SSL, but here is one way which works.
+convenient use of SSL relies on devices having 'real' IP addresses
+and access to fully-connected DNS and security certification services.
 
-The plugin persists push notification user/device subscriptions
-using a Signal K resources provider.
-By default it uses Signal K's built-in 'resources-provider'
+Devices on a private LAN, even one with a reliable Internet connection,
+tend to have 'local' IP addresses and so cannot use public DNS and SSL
+certification services.
+We have to do some work.
+
+Firstly, we need to configure Signal K to operate using SSL.
+Run 'signalk-server-setup' and enter 'y' in response to the 'Do you want
+to enable SSL?' prompt.
+
+We then need to provide the plugin with a persistent data store where
+it can save push notification subscriptions.
+The plugin uses the services of a Signal K resources provider and by
+default is configured to use Signal K's built-in 'resources-provider'
 plugin.
-1. Configure Signal K to operate using SSL. Run 'signalk-server-setup'
-   and enter 'y' in response to the 'Do you want to enable SSL?'
-   prompt.
+Go to the Signal K dashboard and configure the 'Resources Provider
+(built-in)' plugin to support the 'alarm-manager' custom resource
+type.
 
-2. Configure storage for push notification subscriptions.
-   Go to the Signal K dashboard and configure the 'Resources Provider
-   (built-in)' plugin to support the 'alarm-manager' custom resource
-   type.
+Finally, enable 'Push notifications' in the plugin configuration.
 
-3. In the unlikely circumstance that you have a UI and web-browser on
-   the same device as your Signal server then you can check that things
-   are working by opening the plugin's Webapp, clicking the 'Subscribe'
-   and button and allowing notifications from 'localhost' in the
-   ensuing, browser-generated, dialogue.
-   Once subscribed, if you then click the 'Test' button you should
-   receive a push notification which confirms that the plugin is working.
+At this point the plugin is able to manage subscriptions to the push
+notification service and can raise push notification when alarm
+conditions arise.
+Without SSL this feature is only accessible from the Signal K server
+host, but in the unlikely circumstance that you have a UI and web-browser
+on the same device as your Signal server then you can check that things
+are working.
+Opening the plugin's Webapp, click the 'Subscribe' button and allowing
+notifications from 'localhost' in the ensuing, browser-generated,
+dialogue.
+Once subscribed, if you then click the 'Test' button you should
+receive a push notification which confirms that the plugin is working.
 
    Repeating this procedure from a device other than the Signal K
    server will fail because the Signal K server and client are unable
