@@ -31,7 +31,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/keys"
+                type: array
+                items:
+                  type: string
         500:
           description: |
             Error.
@@ -50,7 +52,28 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/digest"
+                type: object
+                properties:
+                  additionalProperties:
+                    type: object
+                    properties:
+                      notification: 
+                        properties:
+                          state:
+                            type: string
+                            description: Alarm state of the notification.
+                          method:
+                            type: array
+                            items:
+                              type: string
+                          message:
+                            type: string
+                          id:
+                            type: string
+                      suppressedOutputs:
+                        type: array
+                        items:
+                          type: string
         500:
           description: |
             Error.
@@ -69,23 +92,29 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/outputs"
+                type: object
+                properties:
+                  additionalProperties:
+                    type: number
+                    minimum: 0
+                    maximum: 1
         500:
           description: |
             Error.
             The server was unable to service the request.
-  /outputs/{name}:
+  /outputs/{outputName}:
     get:
       description: |
         Get the current state of the output specified by {name}.
       parameters:
-      - name: name
+      - outputName:
+        name: outputName
         in: path
         description: |
           Identifier of the output channel whose state is required.
         required: true
         schema:
-          $ref: "#/components/schemas/name"
+          type: string
       responses:
         200:
           description: |
@@ -95,7 +124,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/state"
+                type: number
+                minimum: 0
+                maximum: 1
         404:
           description: |
             Error.
@@ -104,18 +135,19 @@ paths:
           description: |
             Error.
             The server was unable to service the request.
-  /suppress/{name}:
+  /suppress/{outputName}:
     patch:
       description: |
         Suppress output on output channel {name}.
       parameters:
-      - name: name
+      - outputName:
+        name: outputName
         in: path
         description: |
           Identifier of the output channel which should be suppressed.
         required: true
         schema:
-          $ref: "#/components/schemas/name"
+          type: string
       responses:
         200:
           description: |
@@ -215,66 +247,30 @@ paths:
           description: |
             Error.
             The server was unable to service the request.
-components:
-  schemas:
-    name:
+  /push/{subscriberId}:
+    patch:
       description: |
-        Name of an alarm output channel as defined in the alarm-manager
-        configuration.
-      example: "annunciator"
-      type: string
-    state:
-      description: |
-        State of an alarm output channel expressed as an integer where
-        0 says OFF, 1 says ON.
-      example: 0
-      type: number
-      minimum: 0
-      maximum: 1
-    outputs:
-      description: |
-        Object summarising the state of all alarm outputs.
-        Each property name is the name of a configured output channel
-        with a value indication the channel state.
-      example:
-        { "beacon": 1, "annunciator": 0 }
-      type: object
-      additionalProperties:
-        $ref: "#/components/schemas/state"
-    keys:
-      description: |
-        Array containing the Signal K keys currently being monitored by
-        the alarm manager.
-      example:
-        [ "tanks.wasteWater.0.currentLevel" ]
-      type: array
-      items:
-        type: string
-    digest:
-      description: |
-        Object containing a collection of properties each of which
-        describes an active alarm notification.
-        Each property has its name set to the Signal K key/path to
-        which the alarm notification relates and its value set to
-        the full notification object.
-      type: object
-      additionalProperties:
-        type: object
-        properties:
-          notification: 
-            properties:
-              state:
-                type: string
-                description: Alarm state of the notification.
-              method:
-                type: array
-                items:
-                  type: string
-              message:
-                type: string
-              id:
-                type: string
-          suppressedOutputs:
-            type: array
-            items:
-              $ref: "#/components/schemas/name"
+        Send a test notification to an existing subscriber.
+      parameters:
+      - subscriberId:
+        name: subscriberId
+        in: path
+        description: |
+          Identifier for subscriber who should be notified.
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: |
+            Success.
+            A push notification has been sent to subscriberId.
+        404:
+          description: |
+            Not found.
+            The push notification subscription associated with subscriberId
+            was not found in the plugin's database.
+        500:
+          description: |
+            Error.
+            The server was unable to service the request.
