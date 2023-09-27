@@ -190,6 +190,7 @@ We have to do some work:
    type.
 
 3. Turn on push notifications.
+   Login to your Signal K account a
    Enable 'Push notifications' in the plugin configuration.
 
 At this point the plugin is able to manage subscriptions to the push
@@ -207,7 +208,6 @@ to communicate with a trusted peer.
 Repeating this procedure from a device other than the Signal K
 server will fail because the Signal K server and client are unable
 to authenticate one-another using SSL.
-
 
 ## Operating principle
 

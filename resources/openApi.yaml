@@ -129,6 +129,16 @@ paths:
           description: |
             Error.
             The server was unable to service the request.
+  /subscribe/{name}:
+    post:
+      description: |
+        Subscribe a user for push notification messages.
+      parameters:
+      - name:
+        in: path
+        description:
+  /unsubscribe/{name}:
+  /test/:
 components:
   schemas:
     name:
