@@ -1,3 +1,9 @@
+# Static files in the folder created by webpack
+public/*
+!public/index.html
+!public/index.js
+!public/service-worker.js
+
 # Logs
 logs
 *.log
