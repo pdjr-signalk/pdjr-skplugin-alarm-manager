@@ -32,7 +32,8 @@
   "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme",
   "dependencies": {
     "lodash": "^4.17.21",
-    "sprintf-js": "^1.1.2"
+    "sprintf-js": "^1.1.2",
+    "web-push": "^3.6.6"
   },
   "directories": {
     "lib": "lib"
