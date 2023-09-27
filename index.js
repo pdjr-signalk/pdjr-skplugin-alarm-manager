@@ -239,8 +239,8 @@ module.exports = function (app) {
     router.get('/outputs/', handleRoutes);
     router.get('/output/:name', handleRoutes);
     router.patch('/suppress/:name', handleRoutes);
-    router.post('/subscribe/:id', handleRoutes);
-    router.delete('/unsubscribe/:id', handleRoutes);
+    router.post('/subscribe/:subscriberId', handleRoutes);
+    router.delete('/unsubscribe/:subscriberId', handleRoutes);
     router.patch('/notify/:id', handleRoutes);
   }
 
@@ -435,7 +435,7 @@ module.exports = function (app) {
           }
           break;
         case '/subscribe':
-          var subscriberId = req.params.id;
+          var subscriberId = req.params.subscriberId;
           var subscription = req.body;
           app.debug("received subscribe request for %s (%s)", subscriberId, JSON.stringify(subscription));
           if ((typeof subscription === 'object') && (!Array.isArray(subscription)) && (subscriberId)) {
@@ -454,7 +454,7 @@ module.exports = function (app) {
           }
           break;
         case '/unsubscribe':
-          var subscriberId = req.params.id;
+          var subscriberId = req.params.subscriberId;
           app.debug("received unsubscribe request for %s", subscriberId);
           if (subscriberId) {
             app.resourcesApi.deleteResource(
