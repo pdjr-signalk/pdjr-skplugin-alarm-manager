@@ -158,7 +158,6 @@ const PLUGIN_SCHEMA = {
 const PLUGIN_UISCHEMA = {};
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
-const VAPID_DETAILS = undefined;
 
 module.exports = function (app) {
   var plugin = {};
@@ -166,6 +165,7 @@ module.exports = function (app) {
   var resistantUnsubscribes = [];
   var alarmPaths = [];
   var notificationDigest = { };
+  var VAPID_DETAILS = undefined;
 
   plugin.id = PLUGIN_ID;
   plugin.name = PLUGIN_NAME;
@@ -434,7 +434,7 @@ module.exports = function (app) {
           if (output) {
             expressSend(res, 200, new Number(output.lastUpdateState), req.path);
           } else {
-            throw new Error("404");
+            expressSend(res, 404, "404: invalid request", req.path);
           }
           break;
         case '/suppress':
@@ -444,13 +444,12 @@ module.exports = function (app) {
             });
             expressSend(res, 200, null, req.path);
           } else {
-            throw new Error("404");
+            expressSend(res, 404, "404: invalid request", req.path);
           }
           break;
         case '/subscribe':
           var subscriberId = req.params.subscriberId;
           var subscription = req.body;
-          app.debug("received subscribe request for %s (%s)", subscriberId, JSON.stringify(subscription));
           if ((typeof subscription === 'object') && (!Array.isArray(subscription)) && (subscriberId)) {
             app.resourcesApi.setResource(
               plugin.options.pushNotifications.resourceType,
@@ -460,15 +459,14 @@ module.exports = function (app) {
             ).then(() => {
               expressSend(res, 200, null, req.path);
             }).catch((e) => {
-              throw new Error("503");
+              expressSend(res, 503, "503: cannot save subscription", req.path);
             });
           } else {
-            throw new Error("400");
+            expressSend(res, 400, "400: invalid request", req.path);
           }
           break;
         case '/unsubscribe':
           var subscriberId = req.params.subscriberId;
-          app.debug("received unsubscribe request for %s", subscriberId);
           if (subscriberId) {
             app.resourcesApi.deleteResource(
               plugin.options.pushNotifications.resourceType,
@@ -477,16 +475,14 @@ module.exports = function (app) {
             ).then(() => {
               expressSend(res, 200, null, req.path);
             }).catch((e) => {
-              console.log(e.message);
-              throw new Error("404");
+              expressSend(res, 404, "404: unknown subscriber", req.path);
             });
           } else {
-            throw new Error("400");
+            expressSend(res, 400, "400: invalid request", req.path);
           }
           break;
         case '/push':
           var subscriberId = req.params.subscriberId;
-          app.debug("received push request for %s", subscriberId);
           if (subscriberId) {
             app.resourcesApi.getResource(
               plugin.options.pushNotifications.resourceType,
@@ -503,16 +499,18 @@ module.exports = function (app) {
               issuePushNotifications([subscription], pushNotification);
               expressSend(res, 200, null, req.path);
             }).catch((e) => {
-              console.log(e.message);
-              throw new Error("404");
+              expressSend(res, 404, "404: unknown subscriber", req.path);
             });
           } else {
-            throw new Error("400");
+            expressSend(res, 400, "400: invalid request", req.path);
           }
           break;
         case '/vapid':
-          app.debug("received request for VAPID public key");
-          expressSend(res, 200, { publicKey: VAPID_DETAILS.publicKey }, req.path);
+          if (VAPID_DETAILS) {
+            expressSend(res, 200, { publicKey: VAPID_DETAILS.publicKey }, req.path);
+          } else {
+            expressSend(res, 404, "404: bad or missing VAPID data", req.path);
+          }
           break;  
       }
     } catch(e) {
