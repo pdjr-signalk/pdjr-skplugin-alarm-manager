@@ -158,11 +158,7 @@ const PLUGIN_SCHEMA = {
 const PLUGIN_UISCHEMA = {};
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
-const VAPID_DETAILS = {
-  publicKey: process.env.VAPID_PUBLIC_KEY,
-  privateKey: process.env.VAPID_PRIVATE_KEY,
-  subject: process.env.VAPID_SUBJECT
-};
+const VAPID_DETAILS = undefined;
 
 module.exports = function (app) {
   var plugin = {};
@@ -189,9 +185,14 @@ module.exports = function (app) {
     options.outputs = options.outputs || plugin.schema.properties.outputs.default;
     options.pushNotifications = { ...plugin.schema.properties.pushNotifications.default, ...(options.pushNotifications || {})};
     options.defaultMethods = { ...plugin.schema.properties.defaultMethods.default, ...(options.defaultMethods || {})};
-    plugin.options = options;
-    app.savePluginOptions(plugin.options, ()=>{});
+    app.savePluginOptions(plugin.options = options, ()=>{});
     app.debug("using configuration:\n%s", JSON.stringify(plugin.options, null, 2));
+
+    VAPID_DETAILS = getVapidDetails();
+    if ((plugin.options.pushNotifications.enabled) && (VAPID_DETAILS === undefined)) {
+      plugin.options.pushNotifications.enabled = false;
+      log.W("push notification service disabled because of missing VAPID keys", false);
+    }
 
     // Subscribe to any suppression paths configured for the output
     // channels and persist these across the lifetime of the plugin.
@@ -241,7 +242,8 @@ module.exports = function (app) {
     router.patch('/suppress/:name', handleRoutes);
     router.post('/subscribe/:subscriberId', handleRoutes);
     router.delete('/unsubscribe/:subscriberId', handleRoutes);
-    router.patch('/notify/:id', handleRoutes);
+    router.patch('/push/:subscriberId', handleRoutes);
+    router.get('/vapid', handleRoutes);
   }
 
   plugin.getOpenApi = function() {
@@ -399,6 +401,17 @@ module.exports = function (app) {
     return(true);
   }
 
+  function getVapidDetails() {
+    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT) {
+      return({
+        publicKey: process.env.VAPID_PUBLIC_KEY,
+        privateKey: process.env.VAPID_PRIVATE_KEY,
+        subject: process.env.VAPID_SUBJECT
+      });
+    }
+    return(undefined);
+  }
+
   /********************************************************************
    * EXPRESS ROUTE HANDLING
    */
@@ -471,9 +484,9 @@ module.exports = function (app) {
             throw new Error("400");
           }
           break;
-        case '/notify':
-          var subscriberId = req.params.id;
-          app.debug("received notify request for %s", subscriberId);
+        case '/push':
+          var subscriberId = req.params.subscriberId;
+          app.debug("received push request for %s", subscriberId);
           if (subscriberId) {
             app.resourcesApi.getResource(
               plugin.options.pushNotifications.resourceType,
@@ -497,8 +510,13 @@ module.exports = function (app) {
             throw new Error("400");
           }
           break;
+        case '/vapid':
+          app.debug("received request for VAPID public key");
+          expressSend(res, 200, { publicKey: VAPID_DETAILS.publicKey }, req.path);
+          break;  
       }
     } catch(e) {
+      app.debug(e.message);
       expressSend(res, ((/^\d+$/.test(e.message))?parseInt(e.message):500), null, req.path);
     }
 

@@ -274,3 +274,24 @@ paths:
           description: |
             Error.
             The server was unable to service the request.
+  /vapid:
+    get:
+      description: |
+        Retrieve the server's public VAPID key.
+      responses:
+        200:
+          description: |
+            Success.
+            The response body contains VAPID data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicKey:
+                    type: string
+        500:
+          description:
+            Error.
+            The server was unable to service the request.
+ 

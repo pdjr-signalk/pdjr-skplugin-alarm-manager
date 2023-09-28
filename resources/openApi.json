@@ -298,6 +298,31 @@
           }
         }
       }
+    },
+    "/vapid": {
+      "get": {
+        "description": "Retrieve the server's public VAPID key.\n",
+        "responses": {
+          "200": {
+            "description": "Success.\nThe response body contains VAPID data.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "publicKey": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error. The server was unable to service the request."
+          }
+        }
+      }
     }
   }
 }

@@ -1,13 +1,7 @@
-const VAPID_PUBLIC_KEY = 'BCibInLpIhe82-bpBCIWej0F5bBO8j1xAc2jTb41xXQsWYfmjPEXy8TDSv7XK6AGrXS22kKLPOd1rNo2VIXM9K4';
+var VAPID_PUBLIC_KEY = null;
 var subscribeButton = null;
 var unsubscribeButton = null;
 var testButton = null;
-
-
-  
-
-  
-
 
 window.onload = function(){
     subscribeButton = document.getElementById('subscribe');
@@ -19,12 +13,24 @@ window.onload = function(){
     unsubscribeButton.addEventListener('click', unsubscribeButtonHandler);
     testButton.addEventListener('click', testButtonHandler);
 
-    if (registerServiceWorker()) {
-      subscribeButton.disabled = false;
-      pushNotificationPanel.style.display = 'block';
-    } else {
-      console.log("JJJJ");
-    }
+    fetch('/plugins/alarm-manager/vapid', { method: 'GET' }).then((r) => {
+      if (r.status == 200) {
+        r.json().then((responseObject) => {
+          VAPID_PUBLIC_KEY = responseObject.publicKey;
+          console.log(VAPID_PUBLIC_KEY);
+          if (registerServiceWorker()) {
+            subscribeButton.disabled = false;
+            pushNotificationPanel.style.display = 'block';
+          } else {
+            console.log("JJJJ");
+          }
+        }).catch((e) => {
+          console.error("Unable to parse server respnse");
+        })
+      }
+    }).catch((e) => {
+      console.error("Unable to fetch VAPID key from server");
+    });
     
    // code goes here
 };
@@ -90,7 +96,7 @@ async function unsubscribeButtonHandler() {
 async function testButtonHandler() {
     const registration = await navigator.serviceWorker.getRegistration();
     const subscription = await registration.pushManager.getSubscription();
-    fetch('/plugins/alarm-manager/notify/' + subscription.endpoint.slice(-8), { method: 'PATCH' }).then((r) => {
+    fetch('/plugins/alarm-manager/push/' + subscription.endpoint.slice(-8), { method: 'PATCH' }).then((r) => {
       console.info("Server accepted notify request");
     }).catch((e) => {
       console.error("Server rejected notify request");
