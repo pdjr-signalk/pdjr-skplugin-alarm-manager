@@ -549,19 +549,19 @@ module.exports = function (app) {
   }
 
   function issuePushNotifications(subscribers, pushNotification) {
-    app.debug("issuePushNotifications(%s, %s", JSON.stringify(subscribers), JSON.stringify(pushNotification));
     pushNotification = JSON.stringify(pushNotification);
     
     subscribers.forEach(subscriber => {
       const subscriberId = subscriber.endpoint.slice(-8);
       try {
+        app.debug("sending notification to subscriber '%s'", subscriberId);
         webpush.sendNotification(subscriber, pushNotification, { TTL: 10000, vapidDetails: VAPID_DETAILS }).then(result => {
-          app.debug("notification sent to %s (%s)", subscriberId, result.statusCode);
-        }).catch(error => {
-          app.debug("notification failure for subscriber %s (%s)", subscriberId, error);
+          ;
+        }).catch((e) => {
+          app.debug("send notification failed for subscriber %s (%s)", subscriberId, e);
         });
       } catch(e) {
-        app.debug("webpush failed (%s)", e.message);
+        app.debug("webpush send notification service failure (%s)", e.message);
       }
     });
   }

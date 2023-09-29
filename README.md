@@ -36,9 +36,13 @@ will go active again.
 This mechanism allows the easy implementation of a 'silence alarm'
 function on selected output channels.
 
-Finally and optionally, the plugin will attempt to send push
-notifications to subscribed devices.
-This feature is disabled by default and full functionality will
+Finally and optionally, the plugin can use Internet push notification
+services to send push notifications of alarm conditions to subscribed
+users/devices.
+This will only be useful if and when the Signal K LAN has a reliable
+Internet connection.
+
+This feature is disabled by default and full functionality will usually
 require non-trivial configuration of the Signal K host operating
 environment.
 See the discussion below.
@@ -168,7 +172,84 @@ switch input:
 
 ### Push notifications
 
-Getting a pop-up notification on an arbitrary device when an alarm
+If your Signal K server has an at least sometimes available Internet
+connection, then begin by preparing the plugin execution environment
+and enabling the push notification service.
+
+1. Create VAPID keys required by the push notification protocol.
+   ```
+   $> npm install -g web-push
+   $> web-push generate-vapid-keys
+   *  keys are output here **
+   ```
+2. Make VAPID keys available in the Signal K execution environment
+   by using a text editor to add the following lines to the beginning
+   of the ```signalk-server``` start script.
+   ```
+   export VAPID_PUBLIC_KEY=*public key*
+   export VAPID_PRIVATE_KEY=*private key*
+   export VAPID_SUBJECT=mailto:*some email address*
+   ```
+3. Create a persistent data store where the plugin can save push
+   notification subscriptions by configuring Signal K's 'Resources
+   Provider (built-in)' plugin to support the 'alarm-manager' custom
+   resource type.
+4. Configure Signal K to operate using SSL (if it isn't already) by
+   running 'signalk-server-setup' and entering 'y' in response to the
+   'Do you want to enable SSL?' prompt.
+5. Enable the plugin's push notification service by checking the
+   'Enable push notifications' property in the plugin configuration
+   screen.
+
+At this point the plugin will be able to manage subscriptions to its
+push notification service and will attept to send push notifications
+to subscribers when alarm conditions arise in Signal K.
+In the unlikely circumstance that your Signal K server has an SSL
+certificate issued by an authoritative provider then nothing more needs
+to be done.
+
+Mostly though, our Signal K servers operate on a private LAN and we
+need to provide an SSL infastructure that will allow the required push
+notification protocols to operate.
+There are a number of ways to achieve this, but I use the simple
+expedient of installing self-signed SSL certificates on the Signal K
+server and client devices.
+This is a little clunky since client certificates have to be manually
+installed and authorised on each push notification client and the
+details of this procedure differ across operating systems and browsers.
+
+6. Generate SSL keys by executing the following commands.
+   ```
+   $> cd ~ ; mkdir ssl ; cd ssl
+   $> # Generate 
+
+   ```
+7. Install server keys in Signal K.
+
+8. Install client key on a Macbook Air
+
+9. Install client key on an Android phone using Brave
+
+
+
+
+
+features will only be accessible from the Signal K
+server host.
+In the circumstance that you have a UI and web-browser
+on the same device as your Signal server then you can check that things
+are working by opening the plugin's Webapp, clicking the 'Subscribe'
+button and allowing notifications from 'localhost' in the ensuing,
+browser-generated, dialogue.
+Once subscribed, if you then click the 'Test' button you should
+receive a push notification confirming that the plugin is able
+to communicate with a trusted peer.
+Repeating this procedure from a device other than the Signal K
+server will fail because the Signal K server and client are unable
+to authenticate one-another using SSL.
+
+mileage depends a good deal on
+getting a pop-up notification on an arbitrary device when an alarm
 notification is raised in Signal K is a non-trivial problem.
 Push notification protocols require SSL and in the real world the
 convenient use of SSL relies on devices having 'real' IP addresses
@@ -179,19 +260,9 @@ tend to have 'local' IP addresses and so cannot use public DNS and SSL
 certification services.
 We have to do some work:
 
-1. Configure Signal K to operate using SSL.
-   Run 'signalk-server-setup' and enter 'y' in response to the 'Do you want
-   to enable SSL?' prompt.
 
-2. Create a persistent data store where the plugin can save push
-   notification subscriptions.
-   Go to the Signal K dashboard and configure the 'Resources Provider
-   (built-in)' plugin to support the 'alarm-manager' custom resource
-   type.
 
-3. Turn on push notifications.
-   Login to your Signal K account a
-   Enable 'Push notifications' in the plugin configuration.
+
 
 At this point the plugin is able to manage subscriptions to the push
 notification service and can raise push notification when alarm
