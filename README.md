@@ -215,8 +215,9 @@ There are a number of ways to achieve this, but I use the simple
 expedient of installing self-signed SSL certificates on the Signal K
 server and client devices.
 This is a little clunky since client certificates have to be manually
-installed and authorised on each push notification client and the
-details of this procedure differ across operating systems and browsers.
+installed and authorised on each push notification client.
+The details of this procedure differ across operating systems and
+browsers.
 
 6. Generate SSL keys by executing the following commands.
    ```
@@ -230,43 +231,6 @@ details of this procedure differ across operating systems and browsers.
 
 9. Install client key on an Android phone using Brave
 
-
-
-
-
-features will only be accessible from the Signal K
-server host.
-In the circumstance that you have a UI and web-browser
-on the same device as your Signal server then you can check that things
-are working by opening the plugin's Webapp, clicking the 'Subscribe'
-button and allowing notifications from 'localhost' in the ensuing,
-browser-generated, dialogue.
-Once subscribed, if you then click the 'Test' button you should
-receive a push notification confirming that the plugin is able
-to communicate with a trusted peer.
-Repeating this procedure from a device other than the Signal K
-server will fail because the Signal K server and client are unable
-to authenticate one-another using SSL.
-
-mileage depends a good deal on
-getting a pop-up notification on an arbitrary device when an alarm
-notification is raised in Signal K is a non-trivial problem.
-Push notification protocols require SSL and in the real world the
-convenient use of SSL relies on devices having 'real' IP addresses
-and access to fully-connected DNS and security certification services.
-
-Devices on a private LAN, even one with a reliable Internet connection,
-tend to have 'local' IP addresses and so cannot use public DNS and SSL
-certification services.
-We have to do some work:
-
-
-
-
-
-At this point the plugin is able to manage subscriptions to the push
-notification service and can raise push notification when alarm
-conditions arise.
 Without SSL this feature is only accessible from the Signal K server
 host, but in the circumstance that you have a UI and web-browser
 on the same device as your Signal server then you can check that things
