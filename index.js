@@ -55,23 +55,23 @@ const PLUGIN_SCHEMA = {
             "description": "This can be a switch path or a notification path",
             "type": "string"
           },
-          "triggerStates": {
-            "title": "Trigger states",
-            "description": "Alarm states which will modulate this output",
+          "methods": {
+            "title": "Trigger methods",
+            "description": "Alarm methods which will modulate this output",
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [ "normal", "warn", "alert", "alarm", "emergency" ]
+              "enum": [ "visual", "sound", "push" ]
             },
             "uniqueItems": true
           },
           "suppressionPath": {
             "title": "Suppression path",
-            "description": "Signal K which can be toggled to suppress output on this channel",
+            "description": "Signal K path which can be modulated to suppress output on this channel",
             "type": "string"
           }
         },
-        "required" : [ "name", "path", "triggerStates" ],
+        "required" : [ "name", "path", "methods" ],
         "default": []
       }
     },
@@ -117,7 +117,7 @@ const PLUGIN_SCHEMA = {
           "type" : "array",
           "items": {
             "type": "string",
-            "enum": [ "sound", "visual" ]
+            "enum": [ "sound", "visual", "push" ]
           },
           "uniqueItems": true
         },
@@ -125,7 +125,7 @@ const PLUGIN_SCHEMA = {
           "type" : "array",
           "items": {
             "type": "string",
-            "enum": [ "sound", "visual" ]
+            "enum": [ "sound", "visual", "push" ]
           },
           "uniqueItems": true
         },
@@ -133,7 +133,7 @@ const PLUGIN_SCHEMA = {
           "type" : "array",
           "items": {
             "type": "string",
-            "enum": [ "sound", "visual" ]
+            "enum": [ "sound", "visual", "push" ]
           },
           "uniqueItems": true
         },
@@ -141,7 +141,7 @@ const PLUGIN_SCHEMA = {
           "type" : "array",
           "items": {
             "type": "string",
-            "enum": [ "sound", "visual" ]
+            "enum": [ "sound", "visual", "push" ]
           },
           "uniqueItems": true
         }
@@ -149,8 +149,8 @@ const PLUGIN_SCHEMA = {
       "default": {
         "alert": [ "visual" ],
         "warn": [ "visual" ],
-        "alarm": [ "sound", "visual" ],
-        "emergency": [ "sound", "visual" ]
+        "alarm": [ "sound", "visual", "push" ],
+        "emergency": [ "sound", "visual", "push" ]
       }
     }
   }
