@@ -9,7 +9,7 @@ export default function Outputs({
   collapsiblePanelStyle={},
   collapsibleLabel='Outputs',
   panelStyle={},
-  notificationStates=[],
+  notificationMethods=[],
   outputs,
   onChangeCallback,
   onDeleteCallback,
@@ -28,7 +28,7 @@ export default function Outputs({
                     panelStyle={panelStyle}
                     labelWidth={labelWidth}
                     output={output}
-                    notificationStates={notificationStates}
+                    notificationMethods={notificationMethods}
                     onChangeCallback={onChangeCallback}
                     onDeleteCallback={onDeleteCallback}
                   />

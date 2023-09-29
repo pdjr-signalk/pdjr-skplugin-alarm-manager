@@ -75,39 +75,6 @@ const PLUGIN_SCHEMA = {
         "default": []
       }
     },
-    "pushNotifications": {
-      "title": "Push notifications",
-      "description": "Issue push notifications when alarm conditions appear",
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "title": "Enable push notifications",
-          "description": "Issue push notifications when alarm conditions appear",
-          "type": "boolean"
-        },
-        "triggerStates": {
-          "title": "Trigger states",
-          "description": "Alarm states which will raise push notifications",
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [ "warn", "alert", "alarm", "emergency" ]
-          },
-          "uniqueItems": true
-        },
-        "resourcesProviderId": {
-          "title": "Resources provider",
-          "description": "Resources provider used to persist notification subscriptions",
-          "type": "string"
-        },
-        "resourceType": {
-          "title": "Resources type",
-          "description": "Resources type used to persist notification subscriptions",
-          "type": "string"
-        }
-      },
-      "default": { "enabled": false, "triggerStates": [ "emergency" ], "resourcesProviderId": "resources-provider", "resourceType": "alarm-manager" }
-    },
     "defaultMethods" : {
       "title": "Default methods",
       "description": "The notification methods to use if none are specified in key metadata",
@@ -183,16 +150,9 @@ module.exports = function (app) {
     options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
     options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
     options.outputs = options.outputs || plugin.schema.properties.outputs.default;
-    options.pushNotifications = { ...plugin.schema.properties.pushNotifications.default, ...(options.pushNotifications || {})};
-    options.defaultMethods = { ...plugin.schema.properties.defaultMethods.default, ...(options.defaultMethods || {})};
+    options.defaultMethods = options.defaultMethods || plugin.schema.properties.defaultMethods.default;
     app.savePluginOptions(plugin.options = options, ()=>{});
     app.debug("using configuration:\n%s", JSON.stringify(plugin.options, null, 2));
-
-    VAPID_DETAILS = getVapidDetails();
-    if ((plugin.options.pushNotifications.enabled) && (VAPID_DETAILS === undefined)) {
-      plugin.options.pushNotifications.enabled = false;
-      log.W("push notification service disabled because of missing VAPID keys", false);
-    }
 
     // Subscribe to any suppression paths configured for the output
     // channels and persist these across the lifetime of the plugin.
@@ -220,7 +180,6 @@ module.exports = function (app) {
           alarmPaths = availableAlarmPaths;
           if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
           log.N("monitoring %d alarm path%s", alarmPaths.length, (alarmPaths.length == 1)?"":"s");
-          if (plugin.options.pushNotifications.enabled === true) log.N("push notifications are enabled for %s", plugin.options.pushNotifications.triggerStates, false);
           startAlarmMonitoring(alarmPaths, notificationDigest, unsubscribes);
         }
       }
@@ -240,10 +199,6 @@ module.exports = function (app) {
     router.get('/outputs/', handleRoutes);
     router.get('/output/:name', handleRoutes);
     router.patch('/suppress/:name', handleRoutes);
-    router.post('/subscribe/:subscriberId', handleRoutes);
-    router.delete('/unsubscribe/:subscriberId', handleRoutes);
-    router.patch('/push/:subscriberId', handleRoutes);
-    router.get('/vapid', handleRoutes);
   }
 
   plugin.getOpenApi = function() {
@@ -274,12 +229,6 @@ module.exports = function (app) {
             app.debug("issuing '%s' notification on '%s'", notification.state, path);
             digest[path] = { "notification": notification, "suppressedOutputs": [] };
             (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
-            if (plugin.options.pushNotifications.enabled) {
-              if (plugin.options.pushNotifications.triggerStates.includes(notification.state)) {
-                log.N("issueing push notifications");
-                issuePushNotificationsToSubscribers(path, v, notification);
-              }
-            }
             updated = true;
           }
         } else {
@@ -290,46 +239,47 @@ module.exports = function (app) {
             updated = true;
           }
         }
-        if (updated) {
+        if (updated === true) {
           (new Delta(app, plugin.id)).addValue(plugin.options.digestPath, digest).commit().clear();
-          if (plugin.options.outputs) {
-            plugin.options.outputs.forEach(output => {
-              var currentDigestStates = Object.keys(digest)
-              .filter(key => !digest[key].suppressedOutputs.includes(output.name))
-              .map(key => digest[key].notification.state);
-              updateOutput(output, (output.triggerStates.filter(state => currentDigestStates.includes(state)).length > 0)?1:0);
-            });
-          }
+          (plugin.options.outputs || []).forEach(output => {
+            var activeDigestMethods = Object.keys(digest)
+            .filter(key => !digest[key].suppressedOutputs.includes(output.name))
+            .map(key => (digest[key].notification.method || []))
+            .reduce((a,methods) => {
+              methods.forEach(method => { if (!a.includes(method)) a.push(method); });
+              return(a);
+            }, []);
+            updateOutput(output, (output.methods.reduce((a,method) => (activeDigestMethods.includes(method) || a), false))?1:0, path);
+          });
         }
       }));
     });
   }
 
-  function updateOutput(output, state) {
+  function updateOutput(output, state, path) {
     var matches;
     if ((matches = output.path.match(/^electrical\.switches\.(.*)\.state$/)) && (matches == 2)) {
       if (output.lastUpdateState != state) {
         app.debug("updating switch output '%s' to state %d", output.name, state);
-        app.putSelfPath(path, state);
+        app.putSelfPath(output.path, state);
         output.lastUpdateState = state;
       }
     } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)\:(.*)$/)) && (matches.length == 4)) {
       var notificationState = (state)?matches[2]:matched[3];
       if (output.lastUpdateState != state) {
-        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], { 'message': 'Alarm manager output', 'state': notificationState, 'method': [] }).commit().clear();
+        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], { 'message': path, 'state': notificationState, 'method': [] }).commit().clear();
         output.lastUpdateState = state;
       }
     } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)$/)) && (matches.length == 3)) {
       notificationState = (state)?matches[2]:null;
       if (output.lastUpdateState != state) {
-        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': notificationState, 'method': [] }:null).commit().clear();
+        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': path, 'state': notificationState, 'method': [] }:null).commit().clear();
         output.lastUpdateState = state;
       }
     } else if ((matches = output.path.match(/^notifications\.(.*)$/)) && (matches.length == 2)) {
       notificationState = (state)?'normal':null;
       if (output.lastUpdateState != state) {
-        app.debug("updating switch output '%s' to state %d", output.name, state);
-        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': 'Alarm manager output', 'state': notificationState, 'method': [] }:null).commit().clear();
+        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': path, 'state': notificationState, 'method': [] }:null).commit().clear();
         output.lastUpdateState = state;
       }
     } else {
@@ -401,17 +351,6 @@ module.exports = function (app) {
     return(true);
   }
 
-  function getVapidDetails() {
-    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT) {
-      return({
-        publicKey: process.env.VAPID_PUBLIC_KEY,
-        privateKey: process.env.VAPID_PRIVATE_KEY,
-        subject: process.env.VAPID_SUBJECT
-      });
-    }
-    return(undefined);
-  }
-
   /********************************************************************
    * EXPRESS ROUTE HANDLING
    */
@@ -447,71 +386,6 @@ module.exports = function (app) {
             expressSend(res, 404, "404: invalid request", req.path);
           }
           break;
-        case '/subscribe':
-          var subscriberId = req.params.subscriberId;
-          var subscription = req.body;
-          if ((typeof subscription === 'object') && (!Array.isArray(subscription)) && (subscriberId)) {
-            app.resourcesApi.setResource(
-              plugin.options.pushNotifications.resourceType,
-              subscriberId,
-              subscription,
-              plugin.options.pushNotifications.resourcesProviderId
-            ).then(() => {
-              expressSend(res, 200, null, req.path);
-            }).catch((e) => {
-              expressSend(res, 503, "503: cannot save subscription", req.path);
-            });
-          } else {
-            expressSend(res, 400, "400: invalid request", req.path);
-          }
-          break;
-        case '/unsubscribe':
-          var subscriberId = req.params.subscriberId;
-          if (subscriberId) {
-            app.resourcesApi.deleteResource(
-              plugin.options.pushNotifications.resourceType,
-              subscriberId,
-              plugin.options.pushNotifications.resourcesProviderId
-            ).then(() => {
-              expressSend(res, 200, null, req.path);
-            }).catch((e) => {
-              expressSend(res, 404, "404: unknown subscriber", req.path);
-            });
-          } else {
-            expressSend(res, 400, "400: invalid request", req.path);
-          }
-          break;
-        case '/push':
-          var subscriberId = req.params.subscriberId;
-          if (subscriberId) {
-            app.resourcesApi.getResource(
-              plugin.options.pushNotifications.resourceType,
-              subscriberId,
-              plugin.options.pushNotifications.resourcesProviderId
-            ).then((subscription) => {
-              var pushNotification = {
-                title: "TEST NOTIFICATION",
-                options: {
-                  body: "Generated by '" + plugin.id + "' plugin.",
-                  timestamp: Math.floor(new Date().getTime() / 1000)
-                }
-              }
-              issuePushNotifications([subscription], pushNotification);
-              expressSend(res, 200, null, req.path);
-            }).catch((e) => {
-              expressSend(res, 404, "404: unknown subscriber", req.path);
-            });
-          } else {
-            expressSend(res, 400, "400: invalid request", req.path);
-          }
-          break;
-        case '/vapid':
-          if (VAPID_DETAILS) {
-            expressSend(res, 200, { publicKey: VAPID_DETAILS.publicKey }, req.path);
-          } else {
-            expressSend(res, 404, "404: bad or missing VAPID data", req.path);
-          }
-          break;  
       }
     } catch(e) {
       app.debug(e.message);
@@ -524,46 +398,6 @@ module.exports = function (app) {
       if (debugPrefix) app.debug("%s: %d %s", debugPrefix, code, ((body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)));
       return(false);
     }
-  }
-
-  /********************************************************************
-   * PUSH NOTIFICATION HANDLING
-   */
-
-  function issuePushNotificationsToSubscribers(path, value, notification) {
-    app.debug("generatePushNotifications(%s, ,%s, %s)...", path, value, JSON.stringify(notification));
-    app.resourcesApi.listResources(plugin.options.pushNotifications.resourceType, {}, plugin.options.pushNotifications.resourcesProviderId).then((metadata) => {
-      var subscribers = (Object.keys(metadata || {})).map(key => metadata[key]);
-      var pushNotification = {
-        title: notification.state.toUpperCase() + " on " + path,
-        options: {
-          body: notification.message + "\n" + "Trigger value was " + value + ".",
-          timestamp: Math.floor(new Date().getTime() / 1000),
-          id: path
-        }
-      };
-      issuePushNotifications(subscribers, pushNotification);
-    }).catch((e) => {
-      app.debug("error obtaining subscription list (%s)", e.message);
-    })
-  }
-
-  function issuePushNotifications(subscribers, pushNotification) {
-    pushNotification = JSON.stringify(pushNotification);
-    
-    subscribers.forEach(subscriber => {
-      const subscriberId = subscriber.endpoint.slice(-8);
-      try {
-        app.debug("sending notification to subscriber '%s'", subscriberId);
-        webpush.sendNotification(subscriber, pushNotification, { TTL: 10000, vapidDetails: VAPID_DETAILS }).then(result => {
-          ;
-        }).catch((e) => {
-          app.debug("send notification failed for subscriber %s (%s)", subscriberId, e);
-        });
-      } catch(e) {
-        app.debug("webpush send notification service failure (%s)", e.message);
-      }
-    });
   }
 
   return(plugin);

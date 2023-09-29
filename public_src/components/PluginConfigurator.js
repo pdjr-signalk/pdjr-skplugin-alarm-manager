@@ -3,13 +3,11 @@ import { Col, Form, FormGroup, ButtonToolbar, Button } from 'reactstrap';
 import FormField from './FormField';
 import DefaultMethods from './DefaultMethods';
 import Outputs from './Outputs';
-import PushNotifications from './PushNotifications';
 
 const collapsibleTriggerStyle = { }
 const collapsiblePanelStyle = { background: '#f0f0f0', padding: '4px', marginTop: '3px' };
 const panelStyle = { background: '#e0e0e0', padding: '4px', marginBottom: '3px' };
-const notificationMethods = [ 'visual', 'sound' ];
-const notificationStates = [ 'alert', 'warn', 'alarm', 'emergency' ];
+const notificationMethods = [ 'visual', 'sound', 'push' ];
 const labelWidth = '3';
 
 
@@ -27,7 +25,6 @@ class PluginConfigurator extends React.Component {
       ignorePaths: props.configuration.ignorePaths,
       digestPath: props.configuration.digestPath,
       outputs: props.configuration.outputs,
-      pushNotifications: props.configuration.pushNotifications,
       defaultMethods: props.configuration.defaultMethods
     }
 
@@ -38,7 +35,6 @@ class PluginConfigurator extends React.Component {
     this.deleteOutput = this.deleteOutput.bind(this);
     this.createOutput = this.createOutput.bind(this);
     this.setDefaultMethods = this.setDefaultMethods.bind(this);
-    this.setPushNotifications = this.setPushNotifications.bind(this);
   }
   
 
@@ -55,10 +51,10 @@ class PluginConfigurator extends React.Component {
     this.state.outputs.forEach(output => {
       if (output.name === name) {
         switch (property) {
-          case 'name': newOutputs.push({ name: value, path: output.path, triggerStates: output.triggerStates, suppressionPath: output.suppressionPath }); break;
-          case 'path': newOutputs.push({ name: output.name, path: value , triggerStates: output.triggerStates, suppressionPath: output.suppressionPath }); break;
-          case 'triggerStates': newOutputs.push({ name: output.name, path: output.path, triggerStates: value, suppressionPath: output.suppressionPath }); break;
-          case 'suppressionPath': newOutputs.push({ name: output.name, path: output.path, triggerStates: output.triggerStates, suppressionPath: value }); break;
+          case 'name': newOutputs.push({ name: value, path: output.path, methods: output.methods, suppressionPath: output.suppressionPath }); break;
+          case 'path': newOutputs.push({ name: output.name, path: value , methods: output.methods, suppressionPath: output.suppressionPath }); break;
+          case 'methods': newOutputs.push({ name: output.name, path: output.path, methods: value, suppressionPath: output.suppressionPath }); break;
+          case 'suppressionPath': newOutputs.push({ name: output.name, path: output.path, methods: output.methods, suppressionPath: value }); break;
         }
       } else {
         newOutputs.push(output);
@@ -82,7 +78,7 @@ class PluginConfigurator extends React.Component {
         newOutputs.push({
           name: newNames[i],
           path: "notifications.plugins.alarm-manager." + newNames[i],
-          triggerStates: [],
+          methods: [],
           suppressionPath: ""
         });
         break;  
@@ -97,14 +93,6 @@ class PluginConfigurator extends React.Component {
       newDefaultMethods[key] = (key === method)?methods:this.state.defaultMethods[key];
     });
     this.setState({ defaultMethods: newDefaultMethods, saveButtonDisabled: false, cancelButtonDisabled: false });
-  }
-
-  setPushNotifications(property, value) {
-    var newPushNotifications = {};
-    Object.keys(this.state.pushNotifications).forEach(key => {
-      newPushNotifications[key] = (key === property)?value:this.state.pushNotifications[key];
-    });
-    this.setState({ pushNotifications: newPushNotifications, saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
   render() {
@@ -138,21 +126,12 @@ class PluginConfigurator extends React.Component {
               collapsiblePanelStyle={collapsiblePanelStyle}
               collapsibleLabel='Outputs'
               panelStyle={panelStyle}
-              notificationStates={notificationStates}
+              notificationMethods={notificationMethods}
               outputs={this.state.outputs}
               onChangeCallback={this.updateOutput}
               onDeleteCallback={this.deleteOutput}
               onCreateCallback={this.createOutput}
               />
-            <PushNotifications
-              labelWidth={labelWidth}
-              collapsibleTriggerStyle={collapsibleTriggerStyle}
-              collapsiblePanelStyle={collapsiblePanelStyle}
-              collapsibleLabel='Push notifications'
-              notificationStates={notificationStates}
-              pushNotifications={this.state.pushNotifications}
-              onChangeCallback={this.setPushNotifications}
-            />
             <DefaultMethods
               labelWidth={labelWidth}
               collapsibleLabel='Default methods'
@@ -170,10 +149,6 @@ class PluginConfigurator extends React.Component {
               <ButtonToolbar>
                 <Button size='sm' color='primary' disabled={this.state.saveButtonDisabled} onClick={(e) => { e.preventDefault(); this.onSubmit(); }}><i className='fa fa-save' /> Save </Button>&nbsp;
                 <Button size='sm' color='primary' disabled={this.state.cancelButtonDisabled} onClick={(e) => { e.preventDefault(); this.onCancel(); }}><i className='fa fa-ban' /> Cancel </Button>
-              </ButtonToolbar>
-              <ButtonToolbar>
-                <Button size='sm' color='primary' disabled={this.state.unsubscribeButtonDisabled} onClick={(e) => { e.preventDefault(); this.onUnsubscribe(); }}><i className='fa fa-save' /> Unsubscribe </Button>&nbsp;
-                <Button size='sm' color='primary' disabled={this.state.subscribeButtonDisabled} onClick={(e) => { e.preventDefault(); this.onSubscribe(); }}><i className='fa fa-ban' /> Subscribe </Button>
               </ButtonToolbar>
             </ButtonToolbar>
           </Col>
@@ -202,18 +177,7 @@ class PluginConfigurator extends React.Component {
     this.setState({ digestPath: this.props.configuration.digestPath });
     this.setState({ outputs: this.props.configuration.outputs }),
     this.setState({ defaultMethods: this.props.configuration.defaultMethods })
-  }
-
-  onSubscribe() {
-    this.setState({ subscribeButtonDisabled: true });
-
-  }
-
-  onUnsubscribe() {
-    this.setState({ unsubscribeButtonDisabled: true });
-
-  }
-  
+  }  
 
 }
 
