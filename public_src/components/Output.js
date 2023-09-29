@@ -18,7 +18,7 @@ import FormField from './FormField';
 export default function Output({
   panelStyle={},
   labelWidth='3',
-  notificationStates=[],
+  notificationMethods=[],
   output,
   onChangeCallback,
   onDeleteCallback
@@ -35,9 +35,9 @@ export default function Output({
         onChangeCallback={(v) => onChangeCallback(output.name, 'path', v)}
       />
       <FormField
-        type='multiselect' label='Triggers' labelWidth={labelWidth} value={output.triggerStates.map(s => ({ label: s, value: s}))} 
-        options={notificationStates.map(s => ({ label: s, value: s }))}
-        onChangeCallback={(v) => onChangeCallback(output.name, 'triggerStates', (v || []).map(s => s.value))}
+        type='multiselect' label='Trigger methods' labelWidth={labelWidth} value={output.methods.map(s => ({ label: s, value: s}))} 
+        options={notificationMethods.map(s => ({ label: s, value: s }))}
+        onChangeCallback={(v) => onChangeCallback(output.name, 'methods', (v || []).map(s => s.value))}
       />
       <FormField
         type='text' label='Suppression path' labelWidth={labelWidth} value={output.suppressionPath}
