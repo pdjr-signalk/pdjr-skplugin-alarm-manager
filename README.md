@@ -8,7 +8,7 @@ conditions.
 __pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
 the management of alarm conditions in Signal K which arise when key
 values enter alarm zones defined by key metadata.
-The plugin provides four distinct services.
+The plugin provides three distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
 by issuing alarm notifications: thus, a value on '*key*' will raise a
@@ -29,27 +29,13 @@ raised the output channel is enabled.
 An active output channel can be suppressed by supplying a transient
 true value on a configured key.
 Suppression is applied at the digest notification level and applies
-to just those alarm states for which the output channel is configured.
+to just those alarm states for which the output channel is configured
+and which are being notified at the moment of suppression.
 This means that if a new notification appears or an existing
 notification adopts a new trigger state then the alarm output channel
 will go active again.
 This mechanism allows the easy implementation of a 'silence alarm'
-function on selected output channels.
-
-Finally and optionally, the plugin can use Internet push notification
-services to send push notifications of alarm conditions to subscribed
-users/devices.
-This will only be useful if and when the Signal K LAN has a reliable
-Internet connection.
-
-This feature is disabled by default and full functionality will usually
-require non-trivial configuration of the Signal K host operating
-environment.
-See the discussion below.
-
-The plugin provides a simple Wepapp that summarises the current
-alarm state and supports subscription, unsubscription and testing of
-the push notification feature.
+function.
 
 The plugin exposes an
 [HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarm-manager/)
@@ -68,74 +54,85 @@ The plugin will use a built-in, default, configuration to raise alarm
 notifications and maintain a notification digest. 
 If you want to optimise operation of the plugin for your environment
 and/or operate alarm output channels then the plugin must be configured
-using the Signal K Dashboard's Plugin Config interface or by direct
-editing of the plugin's JSON configuration file.
+using Signal K's 'Plugin Config' interface or by direct editing of the
+plugin's JSON configuration file.
 
-**_Ignore paths_** is a comma-separated list of Signal K paths or path
-prefixes which specify keys which should be ignored by the plugin.
-Path prefixes should be used to exclude hierarchies of keys which are
-of no interest.
-
-**_Digest path_** specifies the Signal K path where the plugin will
-maintain its alarm notification digest.
-
-**_Outputs..._** reveals and hides a list of configured output channels.
-Each output channel is defined by the following properties:
-<ul>
-<p>
-<strong><em>Name</em></strong> specifies the name of the output channel.</p>
-<p>
-<strong><em>Path</em></strong> specifies the Signal K path which should be
-updated with the output channel's state.
-This can be either a path under 'electrical.switches.' or a path under
-'notifications.'.</p>
-<p>
-A path under 'electrical.switches.' will have its state set to 1
-when the output channel is triggered, otherwise 0.</p>
-<p>
-A simple path under 'notifications.' should have the form:</p>
-<p>
-<ul>
-<em>notification_path</em>[:<em>on_state</em>[:<em>off_state</em>]]
-</ul></p>
-<em>notification_path</em> will receive a notification when the
-output channel is triggered.
-In the absence of <em>on_state</em> the state of the notification
-will be set to the most serious of the triggering notification
-states and otherwise to <em>on_state</em>.
-In the absence of <em>off_state</em> the notification will be
-deleted when the channel is not triggered and otherwise set to
-<em>off_state</em></off>.</p>
-<p>
-<strong><em>Trigger states</em></strong> specifies the alarm states
-which should operate the output channel when they are present in any
-active alarm notification.</p>
-<p>
-<strong><em>Suppression path</em></strong> specifies a Signal K path
-which can be used to suppress output on the channel.
-The path specified can be either a path under 'electrical.switches.'
-or a path under 'notifications.'.</p>
-<p>
-The arrival of a momentary 1 on a path under 'electrical.switches.'
-will suppress the output channel until the arrival of a new
-triggering event.</p> 
-<p>
-A path under 'notifications.' should have the form:</p>
-<p>
-<ul>
-<em>notification_path</em>[:<em>on_state</em>]
-</ul></p>
-<p>
-The arrival of a momentary notification on 'notification_path' will
-suppress the output channel.
-If <em>on_state</em> is specified then the suppression will only happen
-if the arriving notification has a state equal to <em>on_state</em>.</p>
-</ul>
-
-**_Default methods..._** reveals and hides the specification of the
-suggested methods which will be applied to Signal K keys for each
-possible alarm state when key metadata does not include an explicit
-method property.
+<dl>
+  <dt>Ignore paths (<code>ignorePaths</code>)</dt>
+    <dd>
+      Must provide a comma-separated list of Signal K paths or path prefixes
+      which specify keys which should be ignored by the plugin.
+      <p>
+      Path prefixes should be used to exclude hierarchies of keys which are
+      of no interest.
+      </p>
+    </dd>
+  <dt>Digest path (<code>digestPath</code>)</dt>
+    <dd>
+      Must specify the Signal K path where the plugin will maintain its alarm
+      notification digest.
+    </dd>
+  <dt>Outputs...</dt>
+    <dd>
+      Reveals and hides a list of configured output channels each of which is
+      defined by the following properties.
+      <dl>
+        <dt>Name</dt>
+          <dd>
+            Specifies a name for the output channel.
+          </dd>
+        <dt>Path</dt>
+          <dd>
+            Specifies the Signal K path which should be updated with the output
+            channel's state.
+            This can be either a path under 'electrical.switches.' or a path under
+            'notifications.'.
+            <p>
+            A path under 'electrical.switches.' will have its state set to 1
+            when the output channel is triggered, otherwise 0.</p>
+            <p>
+            A path under 'notifications.' should have the form
+            <em>notification_path</em>[<strong>:</strong><em>on_state</em>[<strong>:</strong><em>off_state</em>]].
+            <p>
+            <em>notification_path</em> will receive a notification when the
+            output channel is triggered with a 'state' property set, in the
+            absence of <em>on_state</em>, to the most serious of the triggering
+            alarm notification states and otherwise to <em>on_state</em>. 
+            <p>
+            In the absence of <em>off_state</em> the notification will be
+            deleted when the output channel stops being triggered and will
+            otherwise have its notification state set to <em>off_state</em>.
+          </dd>
+        <dt>Trigger states</dt>
+          <dd>
+            Specifies the alarm states which should operate the output channel
+            when they are present in any active alarm notification.
+          </dd>
+        <dt>Suppression path</dt>
+          <dd>
+            Specifies a Signal K path which can be used to suppress output on the
+            channel.
+            The path specified can be either a path under 'electrical.switches.'
+            or a path under 'notifications.'.
+            <p>
+            The arrival of a momentary 1 on a path under 'electrical.switches.'
+            will suppress the output channel until the arrival of a new
+            triggering event. 
+            <p>
+            A path under 'notifications.' should have the form:</p>
+            <em>notification_path</em>[<strong>:</strong><em>on_state</em>]
+            <p>
+            The arrival of a momentary notification on <em>notification_path</em> will
+            suppress the output channel.
+            If <em>on_state</em> is specified then the suppression will only happen
+            if the arriving notification has a state equal to <em>on_state</em>.
+          </dd>
+      </dl>
+  <dt>Default methods</dt>
+    <dd>
+    Reveals and hides the specification of the suggested methods which will
+    be applied to Signal K keys for each possible alarm state when key metadata
+    does not include an explicit method property.
 
 ### Example configuration
 
