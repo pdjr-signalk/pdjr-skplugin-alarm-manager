@@ -80,7 +80,13 @@ const PLUGIN_SCHEMA = {
       "description": "The notification methods to use if none are specified in key metadata",
       "type": "object",
       "properties": {
+        "customMethods": {
+          "title": "Custom methods",
+          "description": "Comma-separated list of custom method names",
+          "type": "string"
+        },
         "alert" : {
+          "title": "Methods for ALERT notifications",
           "type" : "array",
           "items": {
             "type": "string",
@@ -89,6 +95,7 @@ const PLUGIN_SCHEMA = {
           "uniqueItems": true
         },
         "warn" : {
+          "title": "Methods for WARN notifications",
           "type" : "array",
           "items": {
             "type": "string",
@@ -97,6 +104,7 @@ const PLUGIN_SCHEMA = {
           "uniqueItems": true
         },
         "alarm" : {
+          "title": "Methods for ALARM notifications",
           "type" : "array",
           "items": {
             "type": "string",
@@ -105,6 +113,7 @@ const PLUGIN_SCHEMA = {
           "uniqueItems": true
         },
         "emergency" : {
+          "title": "Methods for EMERGENCY notifications",
           "type" : "array",
           "items": {
             "type": "string",
@@ -114,10 +123,11 @@ const PLUGIN_SCHEMA = {
         }
       },
       "default": {
+        "customMethods": "",
         "alert": [ "visual" ],
         "warn": [ "visual" ],
-        "alarm": [ "sound", "visual", "push" ],
-        "emergency": [ "sound", "visual", "push" ]
+        "alarm": [ "sound", "visual" ],
+        "emergency": [ "sound", "visual" ]
       }
     }
   }

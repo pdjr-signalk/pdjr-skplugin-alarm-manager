@@ -7,7 +7,7 @@ import Outputs from './Outputs';
 const collapsibleTriggerStyle = { }
 const collapsiblePanelStyle = { background: '#f0f0f0', padding: '4px', marginTop: '3px' };
 const panelStyle = { background: '#e0e0e0', padding: '4px', marginBottom: '3px' };
-const notificationMethods = [ 'visual', 'sound', 'push' ];
+const defaultNotificationMethods = [ 'visual', 'sound' ];
 const labelWidth = '3';
 
 
@@ -89,9 +89,15 @@ class PluginConfigurator extends React.Component {
 
   setDefaultMethods(method, methods) {
     var newDefaultMethods = {};
-    Object.keys(this.state.defaultMethods).forEach(key => {
-      newDefaultMethods[key] = (key === method)?methods:this.state.defaultMethods[key];
-    });
+    switch (method) {
+      case 'customMethods':
+        newDefaultMethods['customMethods'] = methods.split(',').map(v => v.trim()).sort().join(', ');
+      default:
+        Object.keys(this.state.defaultMethods).forEach(key => {
+          newDefaultMethods[key] = (key === method)?methods:this.state.defaultMethods[key];
+        });
+        break;
+      }
     this.setState({ defaultMethods: newDefaultMethods, saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
@@ -126,7 +132,7 @@ class PluginConfigurator extends React.Component {
               collapsiblePanelStyle={collapsiblePanelStyle}
               collapsibleLabel='Outputs'
               panelStyle={panelStyle}
-              notificationMethods={notificationMethods}
+              defaultNotificationMethods={defaultNotificationMethods}
               outputs={this.state.outputs}
               onChangeCallback={this.updateOutput}
               onDeleteCallback={this.deleteOutput}
@@ -134,10 +140,10 @@ class PluginConfigurator extends React.Component {
               />
             <DefaultMethods
               labelWidth={labelWidth}
-              collapsibleLabel='Default methods'
+              collapsibleLabel='Methods'
               collapsibleTriggerStyle={collapsibleTriggerStyle}
               collapsiblePanelStyle={collapsiblePanelStyle}
-              notificationMethods={notificationMethods}
+              notificationMethods={defaultNotificationMethods.concat(this.state.defaultMethods.customMethods.split(',').map(v => v.trim()))}
               methods={this.state.defaultMethods}
               onChangeCallback={this.setDefaultMethods}
             />

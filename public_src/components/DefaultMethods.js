@@ -19,9 +19,17 @@ export default function DefaultMethods({
         <Collapsible trigger={collapsibleLabel + "..."} collapsibleTriggerStyle={collapsibleTriggerStyle}>
           <div style={collapsiblePanelStyle}>
             <FormField
+              type='text'
+              name='customMethods'
+              label='Custom methods'
+              labelWidth={labelWidth}
+              value={methods.customMethods}
+              onChangeCallback={v => onChangeCallback('customMethods', v)}
+            />
+            <FormField
               type='multiselect'
               name='alertMethod'
-              label='Alert'
+              label='Methods used for ALERT'
               labelWidth={labelWidth}
               value={methods.alert.map(v => ({ label: v, value: v }))}
               options={notificationMethods.map(v => ({ label: v, value: v }))}
@@ -30,7 +38,7 @@ export default function DefaultMethods({
             <FormField
               type='multiselect'
               name='warnMethod'
-              label='Warn'
+              label='Methods used for WARN'
               labelWidth={labelWidth}
               value={methods.warn.map(v => ({ label: v, value: v }))}
               options={notificationMethods.map(v => ({ label: v, value: v }))}
@@ -39,7 +47,7 @@ export default function DefaultMethods({
             <FormField
               type='multiselect'
               name='alarmMethod'
-              label='Alarm'
+              label='Methods used for ALARM'
               labelWidth={labelWidth}
               value={methods.alarm.map(v => ({ label: v, value: v }))}
               options={notificationMethods.map(v => ({ label: v, value: v }))}
@@ -48,7 +56,7 @@ export default function DefaultMethods({
             <FormField
               type='multiselect'
               name='emergencyMethod'
-              label='Emergency'
+              label='Methods used for EMERGENCY'
               labelWidth={labelWidth}
               value={methods.emergency.map(v => ({ label: v, value: v }))}
               options={notificationMethods.map(v => ({ label: v, value: v }))}
