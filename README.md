@@ -163,6 +163,7 @@ plugin's JSON configuration file.
     </dl>
   </dd>
 </dl>
+
 ### Example configuration
 
 I use the plugin's output channel feature to operate a visual indicator
