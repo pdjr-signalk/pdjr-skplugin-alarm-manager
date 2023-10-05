@@ -166,9 +166,9 @@ plugin's JSON configuration file.
 
 ### Example configuration
 
-I use the plugin's output channel feature to operate a visual indicator
-when a warning or alert state is present in Signal K and an audible alarm
-when an alarm or emergency state is present.
+I use the plugin's output channel feature to operate an LED indicator
+when an alarm notification is present in Signal K and a sounder to
+signal when an alarm or emergency state is present.
 
 The configuration I use on my boat uses two relay outputs and a
 switch input:
