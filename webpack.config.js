@@ -16,6 +16,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'public')
   },
+  //externals: { 'react': 'react', 'react-dom' : 'reactDOM' },
   module: {
     rules: [
       {

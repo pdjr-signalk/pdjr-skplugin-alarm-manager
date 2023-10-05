@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import { Col, Form, FormGroup, ButtonToolbar, Button } from 'reactstrap';
 import FormField from './FormField';
 import DefaultMethods from './DefaultMethods';
@@ -9,7 +9,6 @@ const collapsiblePanelStyle = { background: '#f0f0f0', padding: '4px', marginTop
 const panelStyle = { background: '#e0e0e0', padding: '4px', marginBottom: '3px' };
 const defaultNotificationMethods = [ 'visual', 'sound' ];
 const labelWidth = '3';
-
 
 class PluginConfigurator extends React.Component {
 
@@ -22,16 +21,16 @@ class PluginConfigurator extends React.Component {
       cancelButtonDisabled: true,
       subscribeButtonDisabled: true,
       unsubscribeButtonDisabled: true,
-      ignorePaths: props.configuration.ignorePaths,
-      digestPath: props.configuration.digestPath,
-      outputs: props.configuration.outputs,
+      ignorePaths: props.configuration.ignorePaths || [],
+      digestPath: props.configuration.digestPath || "",
+      outputs: props.configuration.outputs || [],
       defaultMethods: props.configuration.defaultMethods
     }
 
     this.options = _.cloneDeep(this.props.configuration);
     this.setIgnorePaths = this.setIgnorePaths.bind(this);
     this.setDigestPath = this.setDigestPath.bind(this);
-    this.updateOutput = this.updateOutput.bind(this);
+    this.setOutput = this.setOutput.bind(this);
     this.deleteOutput = this.deleteOutput.bind(this);
     this.createOutput = this.createOutput.bind(this);
     this.setDefaultMethods = this.setDefaultMethods.bind(this);
@@ -39,14 +38,17 @@ class PluginConfigurator extends React.Component {
   
 
   setIgnorePaths(text) {
+    console.log("setIgnorePaths(%s)...", text);
     this.setState({ ignorePaths: text.split(',').map(v => v.trim()).sort(), saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
   setDigestPath(text) {
+    console.log("setDigestPath(%s)...", text);
     this.setState({ digestPath: text.trim(), saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
-  updateOutput(name, property, value) {
+  setOutput(name, property, value) {
+    console.log("setOutput(%s, %s, %s)...", name, property, value);
     var newOutputs = [];
     this.state.outputs.forEach(output => {
       if (output.name === name) {
@@ -64,6 +66,7 @@ class PluginConfigurator extends React.Component {
   }
 
   deleteOutput(name) {
+    console.log("deleteOutput(%s)...", name);
     var newOutputs = [];
     this.state.outputs.forEach(output => { if (output.name !== name) newOutputs.push(output); });
     this.setState({ outputs: newOutputs, saveButtonDisabled: false, cancelButtonDisabled: false });
@@ -132,9 +135,9 @@ class PluginConfigurator extends React.Component {
               collapsiblePanelStyle={collapsiblePanelStyle}
               collapsibleLabel='Outputs'
               panelStyle={panelStyle}
-              defaultNotificationMethods={defaultNotificationMethods}
+              notificationMethods={defaultNotificationMethods.concat(this.state.defaultMethods.customMethods.split(',').map(v => v.trim()))}
               outputs={this.state.outputs}
-              onChangeCallback={this.updateOutput}
+              onChangeCallback={this.setOutput}
               onDeleteCallback={this.deleteOutput}
               onCreateCallback={this.createOutput}
               />
@@ -168,10 +171,10 @@ class PluginConfigurator extends React.Component {
   onSubmit() {
     //console.log("onSubmit:\n%s", JSON.stringify(this.options, null, 2));
     this.setState({ saveButtonDisabled: true, cancelButtonDisabled: true });
-    this.save({
-      ignorePaths: this.state.ignorePaths.split(',').map(v => v.trim()),
+    this.props.save({
+      ignorePaths: this.state.ignorePaths,
       digestPath: this.state.digestPath,
-      outputs: this.stateOutputs,
+      outputs: this.state.outputs,
       defaultMethods: this.state.defaultMethods
     });
   }
@@ -179,7 +182,7 @@ class PluginConfigurator extends React.Component {
   onCancel() {
     //console.log("onCancel:\n%s", JSON.stringify(this.options, null, 2));
     this.setState({ saveButtonDisabled: true, cancelButtonDisabled: true });
-    this.setState({ ignorePaths: this.props.configuration.ignorePaths.join(', ') });
+    this.setState({ ignorePaths: this.props.configuration.ignorePaths });
     this.setState({ digestPath: this.props.configuration.digestPath });
     this.setState({ outputs: this.props.configuration.outputs }),
     this.setState({ defaultMethods: this.props.configuration.defaultMethods })

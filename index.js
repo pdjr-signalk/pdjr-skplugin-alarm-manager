@@ -61,7 +61,7 @@ const PLUGIN_SCHEMA = {
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [ "visual", "sound", "push" ]
+              "enum": [ "visual", "sound" ]
             },
             "uniqueItems": true
           },
@@ -135,6 +135,7 @@ const PLUGIN_SCHEMA = {
 const PLUGIN_UISCHEMA = {};
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
+const PATH_CHECK_INTERVAL = 30; // seconds
 
 module.exports = function (app) {
   var plugin = {};
@@ -143,6 +144,7 @@ module.exports = function (app) {
   var alarmPaths = [];
   var notificationDigest = { };
   var VAPID_DETAILS = undefined;
+  var intervalId = null;
 
   plugin.id = PLUGIN_ID;
   plugin.name = PLUGIN_NAME;
@@ -150,7 +152,7 @@ module.exports = function (app) {
   plugin.schema = PLUGIN_SCHEMA;
   plugin.uiSchema = PLUGIN_UISCHEMA;
 
-  const log = new Log(plugin.id);
+  const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   
   plugin.start = function(options, restartPlugin) {
     var numberOfAvailablePaths = 0;
@@ -162,7 +164,7 @@ module.exports = function (app) {
     options.outputs = options.outputs || plugin.schema.properties.outputs.default;
     options.defaultMethods = options.defaultMethods || plugin.schema.properties.defaultMethods.default;
     app.savePluginOptions(plugin.options = options, ()=>{});
-    app.debug("using configuration:\n%s", JSON.stringify(plugin.options, null, 2));
+    app.debug("using configuration: %s", JSON.stringify(plugin.options, null, 2));
 
     // Subscribe to any suppression paths configured for the output
     // channels and persist these across the lifetime of the plugin.
@@ -183,20 +185,22 @@ module.exports = function (app) {
     // that dynamically appear. If there are changes of this sort, then
     // unsubscribe from any previously used keys and start monitoring
     // the new ones.
-    app.on('serverevent', (e) => {
-      if ((e.type) && (e.type == "SERVERSTATISTICS") && (e.data.numberOfAvailablePaths)) {
-        var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
-        if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
-          alarmPaths = availableAlarmPaths;
-          if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
-          log.N("monitoring %d alarm path%s", alarmPaths.length, (alarmPaths.length == 1)?"":"s");
-          startAlarmMonitoring(alarmPaths, notificationDigest, unsubscribes);
-        }
+    /*intervalId = setInterval(() => {
+      var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
+      log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
+      if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
+        alarmPaths = availableAlarmPaths;
+        if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
+        startAlarmMonitoring(alarmPaths, notificationDigest, unsubscribes);
       }
-    });
+    }, (PATH_CHECK_INTERVAL * 1000));*/
+    var alarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
+    startAlarmMonitoring(alarmPaths, notificationDigest, unsubscribes);  
+
   }
 
   plugin.stop = function() {
+    if (intervalId) clearInterval(intervalId);
 	  unsubscribes.forEach(f => f());
     unsubscribes = [];
 	  resistantUnsubscribes.forEach(f => f());

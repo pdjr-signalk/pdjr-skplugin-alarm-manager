@@ -1,6 +1,6 @@
 {
   "name": "pdjr-skplugin-alarm-manager",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Issue notification and other outputs in response to Signal K alarm conditions",
   "main": "index.js",
   "signalk-plugin-enabled-by-default": true,

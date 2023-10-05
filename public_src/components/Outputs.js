@@ -4,12 +4,12 @@ import Collapsible from 'react-collapsible';
 import Output from './Output';
 
 export default function Outputs({
-  labelWidth='3',
+  labelWidth=3,
   collapsibleTriggerStyle={},
   collapsiblePanelStyle={},
   collapsibleLabel='Outputs',
   panelStyle={},
-  notificationMethods=[],
+  notificationMethods,
   outputs,
   onChangeCallback,
   onDeleteCallback,
