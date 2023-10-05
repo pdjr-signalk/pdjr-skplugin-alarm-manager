@@ -28,11 +28,11 @@ raised the output channel is enabled.
 
 An active output channel can be suppressed by supplying a transient
 true value on a configured key.
-Suppression is applied at the digest notification level and applies
+Suppression is operates at the digest notification level and applies
 to just those alarm states for which the output channel is configured
 and which are being notified at the moment of suppression.
 This means that if a new notification appears or an existing
-notification adopts a new trigger state then the alarm output channel
+notification changes state then the alarm output channel
 will go active again.
 This mechanism allows the easy implementation of a 'silence alarm'
 function.
