@@ -37,6 +37,10 @@
   "directories": {
     "lib": "lib"
   },
+  "peerDependencies": {
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0"
+  },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.15.4",
     "babel-loader": "^9.1.3",
