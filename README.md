@@ -1,11 +1,11 @@
-# pdjr-skplugin-alarmmanager
+# pdjr-skplugin-alarm-manager
 
 Issue notification and other outputs in response to Signal K alarm
 conditions.
 
 ## Description
 
-__pdjr-skplugin-alarmmanager__ implements a centralised mechanism for
+__pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
 detecting and actioning alarm conditions which arise when the value of
 a Signal K key enters an alarm zone defined by the key's metadata.
 The plugin provides three distinct services.
@@ -38,7 +38,7 @@ This mechanism allows the easy implementation of a 'silence alarm'
 function.
 
 The plugin exposes an
-[HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarmmanager/)
+[HTTP API](https://pdjr-signalk.github.io/pdjr-skplugin-alarm-manager/)
 and contributes OpenAPI documentation of its interface to the Signal
 K OpenAPI service.
 
