@@ -15,8 +15,6 @@
  */
 
 const _ = require("lodash");
-const crypto = require("crypto");
-const webpush = require("web-push");
 const Log = require("./lib/signalk-liblog/Log.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
 
@@ -143,7 +141,6 @@ module.exports = function (app) {
   var resistantUnsubscribes = [];
   var alarmPaths = [];
   var notificationDigest = { };
-  var VAPID_DETAILS = undefined;
   var intervalId = null;
 
   plugin.id = PLUGIN_ID;
@@ -155,10 +152,9 @@ module.exports = function (app) {
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   
   plugin.start = function(options, restartPlugin) {
-    var numberOfAvailablePaths = 0;
 
     // Make plugin.options to get scope outside of just start(),
-    // populating defaults and saving to configuration.
+    // incorporate defaults and saving to configuration.
     options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
     options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
     options.outputs = options.outputs || plugin.schema.properties.outputs.default;
@@ -182,6 +178,7 @@ module.exports = function (app) {
     }
     
     startAlarmMonitoringMaybe = startAlarmMonitoringMaybe.bind(this);
+    
     intervalId = setInterval(() => {
       startAlarmMonitoringMaybe(notificationDigest, unsubscribes);
     }, (PATH_CHECK_INTERVAL * 1000));
