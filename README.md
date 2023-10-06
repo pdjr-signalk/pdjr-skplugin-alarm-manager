@@ -8,6 +8,7 @@ conditions.
 __pdjr-skplugin-alarm-manager__ implements a centralised mechanism for
 detecting and actioning alarm conditions which arise when the value of
 a Signal K key enters an alarm zone defined by the key's metadata.
+
 The plugin provides three distinct services.
 
 Firstly, it reponds to the requirements of the Signal K specification
@@ -22,9 +23,9 @@ This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
 Thirdly, the plugin operates zero or more suppressable output channels
-each of which is configured to react to one or more alarm state triggers.
-When an alarm notification with one of the configured trigger states is
-raised the output channel is enabled.
+which are configured to react to one or more alarm method triggers.
+When an alarm notification with one of the configured method trigger
+states is raised the output channel is enabled.
 
 An active output channel can be suppressed by supplying a transient
 true value on a configured key.
@@ -51,7 +52,8 @@ and
 ## Configuration
 
 The plugin will use a built-in, default, configuration to raise alarm
-notifications and maintain a notification digest. 
+notifications and maintain a notification digest.
+
 If you want to optimise operation of the plugin for your environment
 and/or operate alarm output channels then the plugin must be configured
 using Signal K's 'Plugin Config' interface or by direct editing of the
@@ -177,9 +179,11 @@ switch input:
 * 'electrical.switches.bank.usb0.2' operates an audible sounder;
 * 'electrical.switches.bank.0.12.state' senses a momentary panel switch.
 
-I also define a custom notification method 'push' which I can use to
-flag notification that might reasonably be forwarded (pushed) from Signal
-K to system users.
+I also define two custom notification methods 'push' and 'email' which
+I can use to flag notifications that might reasonable be consumed by
+a notification forwarder (like
+[pdjr-signalk-push-notifications](https://github.com/pdjr-signalk/pdjr-skplugin-push-notifications))
+to push notifications from Signal K to remote system users.
 
 ```
 {
@@ -199,11 +203,11 @@ K to system users.
       }
     ],
     "methods": {
-      "customMethods": "push",
+      "customMethods": "push, email",
       "alert": [ "visual" ],
       "warn": [ "visual" ],
-      "alarm": [ "visual", "sound", "push" ],
-      "emergency": [ "visual", "sound", "push" ]
+      "alarm": [ "visual", "sound", "push", "email" ],
+      "emergency": [ "visual", "sound", "push", "email" ]
     }
   }
 }
