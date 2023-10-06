@@ -36,7 +36,7 @@ export default function Outputs({
               })
             }
             <div>
-              <Button onClick={() => onCreateCallback()} style={{ width: '100%' }}>+</Button>
+              <Button onClick={onCreateCallback} style={{ width: '100%' }}>+</Button>
             </div>
           </div>
         </Collapsible>

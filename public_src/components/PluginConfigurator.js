@@ -12,6 +12,10 @@ const labelWidth = '3';
 
 class PluginConfigurator extends React.Component {
 
+  /**
+   * props.configuration = the plugin configuration from Signal K.
+   * props.save = Signal K callback function which saves configuration.
+   */
   constructor(props) {
     //console.log("PluginConfigurator:\n", JSON.stringify(props, null, 2));
     super(props);
@@ -24,7 +28,7 @@ class PluginConfigurator extends React.Component {
       ignorePaths: props.configuration.ignorePaths || [],
       digestPath: props.configuration.digestPath || "",
       outputs: props.configuration.outputs || [],
-      defaultMethods: props.configuration.defaultMethods
+      defaultMethods: props.configuration.defaultMethods || {}
     }
 
     this.options = _.cloneDeep(this.props.configuration);
@@ -35,7 +39,6 @@ class PluginConfigurator extends React.Component {
     this.createOutput = this.createOutput.bind(this);
     this.setDefaultMethods = this.setDefaultMethods.bind(this);
   }
-  
 
   setIgnorePaths(text) {
     console.log("setIgnorePaths(%s)...", text);
@@ -156,8 +159,8 @@ class PluginConfigurator extends React.Component {
           <Col>
             <ButtonToolbar style={{ justifyContent: 'space-between' }}>
               <ButtonToolbar>
-                <Button size='sm' color='primary' disabled={this.state.saveButtonDisabled} onClick={(e) => { e.preventDefault(); this.onSubmit(); }}><i className='fa fa-save' /> Save </Button>&nbsp;
-                <Button size='sm' color='primary' disabled={this.state.cancelButtonDisabled} onClick={(e) => { e.preventDefault(); this.onCancel(); }}><i className='fa fa-ban' /> Cancel </Button>
+                <Button disabled={this.state.saveButtonDisabled} onClick={(e) => { e.preventDefault(); this.onSubmit(); }}> Save </Button>&nbsp;
+                <Button disabled={this.state.cancelButtonDisabled} onClick={(e) => { e.preventDefault(); this.onCancel(); }}> Cancel </Button>
               </ButtonToolbar>
             </ButtonToolbar>
           </Col>

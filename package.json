@@ -10,7 +10,7 @@
     "test": "mocha",
     "prepublishOnly": "npm run clean && npm run build",
     "dev": "webpack --watch --mode development",
-    "build": "webpack --mode=production",
+    "build": "webpack --mode production",
     "clean": "rimraf ./public",
     "bundle-analyzer": "webpack-bundle-analyzer --port 4200 public/stats.json"
   },

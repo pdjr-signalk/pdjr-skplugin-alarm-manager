@@ -44,7 +44,7 @@ export default function Output({
         onChangeCallback={(v) => onChangeCallback(output.name, 'suppressionPath', v)}
       />
       <div>
-        <Button onClick={()=>onDeleteCallback(output.name)}>Delete</Button>
+        <Button onClick={()=>onDeleteCallback(output.name)}> Delete </Button>
       </div>
     </div>
   );

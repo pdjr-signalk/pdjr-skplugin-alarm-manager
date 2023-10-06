@@ -180,23 +180,11 @@ module.exports = function (app) {
         }));
       });
     }
-
-    // Subscribe to server events so that we can keep track of keys
-    // that dynamically appear. If there are changes of this sort, then
-    // unsubscribe from any previously used keys and start monitoring
-    // the new ones.
-    /*intervalId = setInterval(() => {
-      var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
-      log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
-      if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
-        alarmPaths = availableAlarmPaths;
-        if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
-        startAlarmMonitoring(alarmPaths, notificationDigest, unsubscribes);
-      }
-    }, (PATH_CHECK_INTERVAL * 1000));*/
-    var alarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
-    startAlarmMonitoring(alarmPaths, notificationDigest, unsubscribes);  
-
+    
+    startAlarmMonitoringMaybe = startAlarmMonitoringMaybe.bind(this);
+    intervalId = setInterval(() => {
+      startAlarmMonitoringMaybe(notificationDigest, unsubscribes);
+    }, (PATH_CHECK_INTERVAL * 1000));
   }
 
   plugin.stop = function() {
@@ -217,6 +205,16 @@ module.exports = function (app) {
 
   plugin.getOpenApi = function() {
     require("./resources/openApi.json");
+  }
+
+  function startAlarmMonitoringMaybe(digest, unsubscribes) {
+    var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
+    if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
+      log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
+      alarmPaths = availableAlarmPaths;
+      if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
+      startAlarmMonitoring(alarmPaths, digest, unsubscribes);
+    }
   }
 
   /**
