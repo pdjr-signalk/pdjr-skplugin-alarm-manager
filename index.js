@@ -186,6 +186,8 @@ module.exports = function (app) {
     
     startAlarmMonitoringMaybe = startAlarmMonitoringMaybe.bind(this);
     
+    // Repeatedly check the available key set for those that are
+    // configured for alarm use.
     intervalId = setInterval(() => {
       startAlarmMonitoringMaybe(notificationDigest, unsubscribes);
     }, (PATH_CHECK_INTERVAL * 1000));
@@ -211,6 +213,16 @@ module.exports = function (app) {
     require("./resources/openApi.json");
   }
 
+  /**
+   * Identify all data paths in the current data store which support
+   * alarm operation and compares this with the collection currently in
+   * use. If there is a difference, then unsubscribe the current
+   * collection, notify a key change and start alarm monitoring on the
+   * new set of data paths. 
+   * 
+   * @param {*} digest - the alarm digest.
+   * @param {*} unsubscribes - stream unsubscribe function array.
+   */
   function startAlarmMonitoringMaybe(digest, unsubscribes) {
     var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
     if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
