@@ -74,6 +74,16 @@ plugin's JSON configuration file.
       Must specify the Signal K path where the plugin will maintain its alarm
       notification digest.
     </dd>
+  <dt>Key change notification path (<code>keyChangeNotificationPath</code>)
+    <dd>
+      Provide a notification path that can be updated by the plugin
+      when it detects a change in the collection of alarm paths that it
+      must monitor,
+      <p>
+      Such changes happen when a new device or NMEA bus comes on-line and
+      an alarm manager client can watch this notification path to determine
+      when it may need to take associated action.
+      </p>
   <dt>Outputs... <code>outputs</code></dt>
     <dd>
       Reveals and hides a list of configured output channels each of which is
