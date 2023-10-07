@@ -37,6 +37,12 @@ const PLUGIN_SCHEMA = {
       "type": "string",
       "default": "plugins.alarm-manager.digest"
     },
+    "keyChangeNotificationPath": {
+      "title": "Key change notification path",
+      "description": "Issue notification here when key collection changes",
+      "type": "string",
+      "default": "notifications.plugins.alarm-manager.keyChange"
+    },
     "outputs": {
       "title": "Output channels",
       "description": "Output channels that should be set when active alarms with the defined states are present",
@@ -133,7 +139,7 @@ const PLUGIN_SCHEMA = {
 const PLUGIN_UISCHEMA = {};
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
-const PATH_CHECK_INTERVAL = 30; // seconds
+const PATH_CHECK_INTERVAL = 20; // seconds
 
 module.exports = function (app) {
   var plugin = {};
@@ -156,6 +162,7 @@ module.exports = function (app) {
     // Make plugin.options to get scope outside of just start(),
     // incorporate defaults and saving to configuration.
     options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
+    options.keyChangeNotificationPath = options.keyChangeNotificationPath || plugin.schema.properties.keyChangeNotificationPath.default;
     options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
     options.outputs = options.outputs || plugin.schema.properties.outputs.default;
     options.defaultMethods = options.defaultMethods || plugin.schema.properties.defaultMethods.default;
@@ -210,6 +217,17 @@ module.exports = function (app) {
       log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
       alarmPaths = availableAlarmPaths;
       if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
+      if (plugin.options.keyChangeNotificationPath) {
+        (new Delta(app, plugin.id)).addValue(
+          plugin.options.keyChangeNotificationPath,
+          {
+            state: "alert",
+            method: [],
+            message: "Monitored key collection has changed",
+            id: Date.now()
+          }
+        ).commit().clear();
+      }
       startAlarmMonitoring(alarmPaths, digest, unsubscribes);
     }
   }
