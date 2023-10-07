@@ -27,6 +27,7 @@ class PluginConfigurator extends React.Component {
       unsubscribeButtonDisabled: true,
       ignorePaths: props.configuration.ignorePaths || [],
       digestPath: props.configuration.digestPath || "",
+      keyChangeNotificationPath: props.configuration.keyChangeNotificationPath || "",
       outputs: props.configuration.outputs || [],
       defaultMethods: props.configuration.defaultMethods || {}
     }
@@ -34,6 +35,7 @@ class PluginConfigurator extends React.Component {
     this.options = _.cloneDeep(this.props.configuration);
     this.setIgnorePaths = this.setIgnorePaths.bind(this);
     this.setDigestPath = this.setDigestPath.bind(this);
+    this.setKeyChangeNotificationPath = this.setKeyChangeNotificationPath.bind(this);
     this.setOutput = this.setOutput.bind(this);
     this.deleteOutput = this.deleteOutput.bind(this);
     this.createOutput = this.createOutput.bind(this);
@@ -48,6 +50,11 @@ class PluginConfigurator extends React.Component {
   setDigestPath(text) {
     console.log("setDigestPath(%s)...", text);
     this.setState({ digestPath: text.trim(), saveButtonDisabled: false, cancelButtonDisabled: false });
+  }
+
+  setKeyChangeNotificationPath(text) {
+    console.log("setKeyChangeNotificationPath(%s)...", text);
+    this.setState({ keyChangeNotificationPath: text.trim(), saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
   setOutput(name, property, value) {
@@ -131,6 +138,15 @@ class PluginConfigurator extends React.Component {
               value={this.state.digestPath}
               text=''
               onChangeCallback={this.setDigestPath}
+            />
+            <FormField
+              type='text'
+              name='keyChangeNotificationPath'
+              label='Key change notification path'
+              labelWidth={labelWidth}
+              value={this.state.keyChangeNotificationPath}
+              text=''
+              onChangeCallback={this.setKeyChangeNotificationPath}
             />
             <Outputs
               labelWidth={labelWidth}

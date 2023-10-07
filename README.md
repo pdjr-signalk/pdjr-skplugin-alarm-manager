@@ -78,11 +78,12 @@ plugin's JSON configuration file.
     <dd>
       Provide a notification path that can be updated by the plugin
       when it detects a change in the collection of alarm paths that it
-      must monitor,
+      must monitor as will typically happen when a new device or NMEA
+      bus comes on-line.
       <p>
-      Such changes happen when a new device or NMEA bus comes on-line and
-      an alarm manager client can watch this notification path to determine
-      when it may need to take associated action.
+      An alarm manager client which uses especially the key output API
+      can watch this notification path to determine when it may need to
+      relaod any related data.
       </p>
   <dt>Outputs... <code>outputs</code></dt>
     <dd>
@@ -225,16 +226,20 @@ to push notifications from Signal K to remote system users.
 
 ## Operating principle
 
-The plugin monitors all selected keys in the Signal K tree which have
-an associated metadata object that contains a 'zones' property and
-which are therefore able to support alarm function.
+The plugin scans the Signal K data store every few minutes identifying
+all keys in the data store which have an associated metadata object
+that contains a'zones' property and which are therefore able to support
+alarm function.
+When a scan detects a change in the key collection the set of monitored
+keys is updated and a notification of the change issued on the path
+specified by ```keyChangeNotificationPath```.
 
-The plugin waits for values to appear on each key and checks these
-against the associated metadata alarm zones: if the key value falls
-within an alarm zone then a notification will be issued on the path
-'notifications.*key*' using the rules for state and method settings
-defined in the *key*'s metadata zones property and the plugin
-defaults. 
+The plugin waits for values to appear on each monitored key and checks
+these against the associated metadata alarm zones: if the key value
+falls within an alarm zone then a notification will be issued on the
+path 'notifications.*key*' using the rules for state and method
+property values defined in the *key*'s metadata zones property and the
+plugin defaults. 
 
 Each time a notification is issued the alarm digest and any specified
 output channel states are updated.
