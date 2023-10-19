@@ -191,6 +191,7 @@ module.exports = function (app) {
    * @param {*} unsubscribes - array of unsubscribes functions.
    */
   function startAlarmMonitoring(alarmPaths, digest, unsubscribes) {
+    (new Notification(app, plugin.id)).getNotification("6");
     alarmPaths.forEach(path => {
       const zones = (app.getSelfPath(path + ".meta")).zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
       unsubscribes.push(app.streambundle.getSelfStream(path).skipDuplicates().map((v) => getZoneContainingValue(zones, v)).skipDuplicates((ov,nv) => (((ov)?ov.state:null) == ((nv)?nv.state:null))).onValue(activeZone => {
