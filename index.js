@@ -192,7 +192,7 @@ module.exports = function (app) {
    */
   function startAlarmMonitoring(alarmPaths, digest, unsubscribes) {
     console.log("----------");
-    JSON.stringify((new Notification(app, plugin.id)).getNotifications(), null, 2);
+    JSON.stringify((new Notification(app, true)).getNotifications(), null, 2);
     console.log("----------");
     alarmPaths.forEach(path => {
       const zones = (app.getSelfPath(path + ".meta")).zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
@@ -201,7 +201,7 @@ module.exports = function (app) {
         if (activeZone) {
           if ((!digest[path]) || (digest[path].state != activeZone.state)) {
             app.debug("issuing '%s' notification on '%s'", activeZone.state, path);
-            const notification = (new Notification(app, plugin.id)).makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
+            const notification = (new Notification(app)).makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
             digest[path] = notification;
             (new App(app)).notify(path, notification, plugin.id);
             updated = true;
