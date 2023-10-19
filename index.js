@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-
-const _ = require("lodash");
 const Log = require("./lib/signalk-liblog/Log.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
 const Notification = require("./lib/signalk-libnotification/Notification.js");
+const App = require('./lib/signalk-libapp/App.js');
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
 const PATH_CHECK_INTERVAL = 20; // seconds
@@ -104,7 +103,6 @@ module.exports = function (app) {
   plugin.uiSchema = PLUGIN_UISCHEMA;
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
-  const App = new Notification(app, plugin.id);
   
   plugin.start = function(options, restartPlugin) {
 
@@ -177,7 +175,7 @@ module.exports = function (app) {
       log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
       alarmPaths = availableAlarmPaths;
       if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
-      if (plugin.options.keyChangeNotificationPath) App.notify(plugin.options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }, plugin.id);
+      if (plugin.options.keyChangeNotificationPath) (new App(app)).notify(plugin.options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }, plugin.id);
       startAlarmMonitoring(alarmPaths, digest, unsubscribes);
     }
   }
@@ -200,16 +198,16 @@ module.exports = function (app) {
         if (activeZone) {
           if ((!digest[path]) || (digest[path].state != activeZone.state)) {
             app.debug("issuing '%s' notification on '%s'", activeZone.state, path);
-            const notification = App.makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
+            const notification = (new Notification(app, plugin.id)).makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
             digest[path] = notification;
-            App.notify(path, notification, plugin.id);
+            (new App(app)).notify(path, notification, plugin.id);
             updated = true;
           }
         } else {
           app.debug("cancelling notification on '%s'", path);
           if (digest[path]) {
             delete digest[path];
-            App.notify(path, null, plugin.id);
+            (new App(app)).notify(path, null, plugin.id);
             updated = true;
           }
         }
