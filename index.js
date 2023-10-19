@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
+
 const _ = require("lodash");
 const Log = require("./lib/signalk-liblog/Log.js");
 const Delta = require("./lib/signalk-libdelta/Delta.js");
+const Notification = require("./lib/signalk-libnotification/Notification.js");
+
+const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
+const PATH_CHECK_INTERVAL = 20; // seconds
 
 const PLUGIN_ID = "alarm-manager";
 const PLUGIN_NAME = "pdjr-skplugin-alarm-manager";
@@ -59,13 +64,13 @@ const PLUGIN_SCHEMA = {
             "description": "This can be a switch path or a notification path",
             "type": "string"
           },
-          "methods": {
-            "title": "Trigger methods",
-            "description": "Alarm methods which will modulate this output",
+          "states": {
+            "title": "Trigger states",
+            "description": "Alarm states which will modulate this output",
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [ "visual", "sound" ]
+              "enum": ALARM_STATES
             },
             "uniqueItems": true
           },
@@ -75,71 +80,14 @@ const PLUGIN_SCHEMA = {
             "type": "string"
           }
         },
-        "required" : [ "name", "path", "methods" ],
+        "required" : [ "name", "path", "states" ],
         "default": []
-      }
-    },
-    "defaultMethods" : {
-      "title": "Default methods",
-      "description": "The notification methods to use if none are specified in key metadata",
-      "type": "object",
-      "properties": {
-        "customMethods": {
-          "title": "Custom methods",
-          "description": "Comma-separated list of custom method names",
-          "type": "string"
-        },
-        "alert" : {
-          "title": "Methods for ALERT notifications",
-          "type" : "array",
-          "items": {
-            "type": "string",
-            "enum": [ "sound", "visual", "push" ]
-          },
-          "uniqueItems": true
-        },
-        "warn" : {
-          "title": "Methods for WARN notifications",
-          "type" : "array",
-          "items": {
-            "type": "string",
-            "enum": [ "sound", "visual", "push" ]
-          },
-          "uniqueItems": true
-        },
-        "alarm" : {
-          "title": "Methods for ALARM notifications",
-          "type" : "array",
-          "items": {
-            "type": "string",
-            "enum": [ "sound", "visual", "push" ]
-          },
-          "uniqueItems": true
-        },
-        "emergency" : {
-          "title": "Methods for EMERGENCY notifications",
-          "type" : "array",
-          "items": {
-            "type": "string",
-            "enum": [ "sound", "visual", "push" ]
-          },
-          "uniqueItems": true
-        }
-      },
-      "default": {
-        "customMethods": "",
-        "alert": [ "visual" ],
-        "warn": [ "visual" ],
-        "alarm": [ "sound", "visual" ],
-        "emergency": [ "sound", "visual" ]
       }
     }
   }
 };
 const PLUGIN_UISCHEMA = {};
 
-const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
-const PATH_CHECK_INTERVAL = 20; // seconds
 
 module.exports = function (app) {
   var plugin = {};
@@ -156,17 +104,17 @@ module.exports = function (app) {
   plugin.uiSchema = PLUGIN_UISCHEMA;
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
+  const App = new Notification(app, plugin.id);
   
   plugin.start = function(options, restartPlugin) {
 
-    // Make plugin.options to get scope outside of just start(),
-    // incorporate defaults and saving to configuration.
-    options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
-    options.keyChangeNotificationPath = options.keyChangeNotificationPath || plugin.schema.properties.keyChangeNotificationPath.default;
-    options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
-    options.outputs = options.outputs || plugin.schema.properties.outputs.default;
-    options.defaultMethods = options.defaultMethods || plugin.schema.properties.defaultMethods.default;
-    app.savePluginOptions(plugin.options = options, ()=>{});
+    // Expand options to include any schema default and save
+    // result to plugin scope.
+    plugin.options = {};
+    plugin.options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
+    plugin.options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
+    plugin.options.keyChangeNotificationPath = options.keyChangeNotificationPath || plugin.schema.properties.keyChangeNotificationPath.default;
+    plugin.options.outputs = options.outputs || plugin.schema.properties.outputs.default;
     app.debug("using configuration: %s", JSON.stringify(plugin.options, null, 2));
 
     // Subscribe to any suppression paths configured for the output
@@ -177,7 +125,7 @@ module.exports = function (app) {
         resistantUnsubscribes.push(stream.skipDuplicates().onValue(v => {
           if (v == 1) {
             Object.keys(notificationDigest).forEach(key => {
-              if (!notificationDigest[key].suppressedOutputs.includes(output.name)) notificationDigest[key].suppressedOutputs.push(output.name);
+              if (!notificationDigest[key].actions.includes(output.name)) notificationDigest[key].actions.push(output.name);
             })     
           }
         }));
@@ -217,29 +165,19 @@ module.exports = function (app) {
    * Identify all data paths in the current data store which support
    * alarm operation and compares this with the collection currently in
    * use. If there is a difference, then unsubscribe the current
-   * collection, notify a key change and start alarm monitoring on the
-   * new set of data paths. 
+   * collection, notify a key change and call startAlarmMonitoring()
+   * with the new set of data paths. 
    * 
    * @param {*} digest - the alarm digest.
    * @param {*} unsubscribes - stream unsubscribe function array.
    */
   function startAlarmMonitoringMaybe(digest, unsubscribes) {
-    var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths, plugin.options.defaultMethods);
+    var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths);
     if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
       log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
       alarmPaths = availableAlarmPaths;
       if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
-      if (plugin.options.keyChangeNotificationPath) {
-        (new Delta(app, plugin.id)).addValue(
-          plugin.options.keyChangeNotificationPath,
-          {
-            state: "alert",
-            method: [],
-            message: "Monitored key collection has changed",
-            id: Date.now()
-          }
-        ).commit().clear();
-      }
+      if (plugin.options.keyChangeNotificationPath) App.notify(plugin.options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }, plugin.id);
       startAlarmMonitoring(alarmPaths, digest, unsubscribes);
     }
   }
@@ -256,39 +194,32 @@ module.exports = function (app) {
    */
   function startAlarmMonitoring(alarmPaths, digest, unsubscribes) {
     alarmPaths.forEach(path => {
-      var meta = app.getSelfPath(path + ".meta");
-      let zones = meta.zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
-      zones.forEach(zone => { zone.method = (meta[zone.state + "Method"])?meta[zone.state + "Method"]:[]; });
-      var stream = app.streambundle.getSelfStream(path);
-      unsubscribes.push(stream.skipDuplicates().onValue(v => {
+      const zones = (app.getSelfPath(path + ".meta")).zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
+      unsubscribes.push(app.streambundle.getSelfStream(path).skipDuplicates().map((v) => getZoneContainingValue(zones, v)).skipDuplicates((ov,nv) => (((ov)?ov.state:null) == ((nv)?nv.state:null))).onValue(activeZone => {
         var updated = false;
-        var notification = getAlarmNotification(v, zones);
-        if (notification) { // Value is alarming...
-          if ((!digest[path]) || (digest[path].notification.state != notification.state)) {
-            app.debug("issuing '%s' notification on '%s'", notification.state, path);
-            digest[path] = { "notification": notification, "suppressedOutputs": [] };
-            (new Delta(app, plugin.id)).addValue("notifications." + path, notification).commit().clear();
+        if (activeZone) {
+          if ((!digest[path]) || (digest[path].state != activeZone.state)) {
+            app.debug("issuing '%s' notification on '%s'", activeZone.state, path);
+            const notification = App.makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
+            digest[path] = notification;
+            App.notify(path, notification, plugin.id);
             updated = true;
           }
         } else {
+          app.debug("cancelling notification on '%s'", path);
           if (digest[path]) {
-            app.debug("cancelling notification on '%s'", path);
             delete digest[path];
-            (new Delta(app, plugin.id)).addValue("notifications." + path, null).commit().clear();
+            App.notify(path, null, plugin.id);
             updated = true;
           }
         }
         if (updated === true) {
           (new Delta(app, plugin.id)).addValue(plugin.options.digestPath, digest).commit().clear();
           (plugin.options.outputs || []).forEach(output => {
-            var activeDigestMethods = Object.keys(digest)
-            .filter(key => !digest[key].suppressedOutputs.includes(output.name))
-            .map(key => (digest[key].notification.method || []))
-            .reduce((a,methods) => {
-              methods.forEach(method => { if (!a.includes(method)) a.push(method); });
-              return(a);
-            }, []);
-            updateOutput(output, (output.methods.reduce((a,method) => (activeDigestMethods.includes(method) || a), false))?1:0, path);
+            var activeDigestStates = Object.keys(digest)
+            .filter(key => !digest[key].actions.includes(output.name)) // discard suppressed notifications
+            .map(key => (digest[key].state));             // isolate the notification's state
+            updateOutput(output, (output.states.reduce((a,state) => (activeDigestStates.includes(state) || a), false))?1:0, path);
           });
         }
       }));
@@ -327,56 +258,45 @@ module.exports = function (app) {
   }  
 
   /********************************************************************
-   * Returns a well formed notification object or null dependent upon
-   * whether or not <value> is captured by a rule in the <zones> array.
+   * Returns the first entry in the zones array that contains value,
+   * or null if value is not contained in any zone.
+   * 
+   * @param {*} zones - an array of Signal K alarm zones.
+   * @param {*} value - value to be tested for containment.
+   * @returns - an alarm zone or null.
    */
-
-  function getAlarmNotification(value, zones) {
-    var notificationValue = null;
-    var selectedZone = null;
+  function getZoneContainingValue(zones, value) {
+    var containingZone = null;
     zones.forEach(zone => {
       if (((!zone.lower) || (value >= zone.lower)) && ((!zone.upper) || (value <= zone.upper))) {
-        if (!selectedZone) {
-          selectedZone = zone;
+        if (!containingZone) {
+          containingZone = zone;
         } else {
-          if ((zone.lower) && (zone.lower > selectedZone.lower)) selectedZone = zone;
-          if ((zone.upper) && (zone.upper < selectedZone.upper)) selectedZone = zone;
+          if ((zone.lower) && (zone.lower > containingZone.lower)) containingZone = zone;
+          if ((zone.upper) && (zone.upper < containingZone.upper)) containingZone = zone;
         }
       }
     });
-    if (selectedZone) {
-      var now = Date.now();
-      notificationValue = { "state": selectedZone.state, "method": selectedZone.method, "message": selectedZone.message, "id": now };
-    }
-    return(notificationValue);
+    return(containingZone);
   }
 
   /********************************************************************
-   * Returns a list of terminal paths recovered from <app> which have
-   * meta.zones properties and are as a consequence able to support
-   * alarm operation. The list of all available paths is initially
-   * filtered to remove those paths with prefixes in the <ignore>
-   * array.
+   * Filters availablePaths excluding any that match entries in
+   * ignorePaths and of these, any incapable of supporting alarm
+   * function because their metadata does not define any alarm zones.
+   * 
+   * @param {*} availablePaths - collection of paths to be filtered.
+   * @param {*} ignorePaths - prefixes of paths to be ignored.
+   * @returns - list of paths configured to support alarm function.
    */
-  function getAlarmPaths(availablePaths, ignorePaths, defaultMethods) {
+  function getAlarmPaths(availablePaths, ignorePaths) {
     var retval = availablePaths
       .filter(p => (!(ignorePaths.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
-      .filter(p => {
-        var meta = app.getSelfPath(p + ".meta");
-        if ((meta) && (meta.zones) && (meta.zones.length > 0)) {
-          meta.alertMethod = (meta.alertMethod || defaultMethods.alert);
-          meta.warnMethod = (meta.warnMethod || defaultMethods.warn);
-          meta.alarmMethod = (meta.alarmMethod || defaultMethods.alarm);
-          meta.emergencyMethod = (meta.emergencyMethod || defaultMethods.emergency);
-          return(true);
-        } else {
-          return(false);
-        }
-      });
+      .filter(p => { var meta = app.getSelfPath(p + ".meta"); return((meta) && (meta.zones) && (meta.zones.length > 0)); }); 
     return(retval.sort());
   }
 
-  /**
+  /********************************************************************
    * Deep compare two string arrays for equality.
    * 
    * @param {*} a - first array.

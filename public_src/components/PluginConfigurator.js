@@ -1,14 +1,13 @@
 import React from 'react';
 import { Col, Form, FormGroup, ButtonToolbar, Button } from 'reactstrap';
 import FormField from './FormField';
-import DefaultMethods from './DefaultMethods';
 import Outputs from './Outputs';
 
 const collapsibleTriggerStyle = { }
 const collapsiblePanelStyle = { background: '#f0f0f0', padding: '4px', marginTop: '3px' };
 const panelStyle = { background: '#e0e0e0', padding: '4px', marginBottom: '3px' };
-const defaultNotificationMethods = [ 'visual', 'sound' ];
 const labelWidth = '3';
+const alarmStates = [ "normal", "alert", "warn", "alarm", "emergency" ];
 
 class PluginConfigurator extends React.Component {
 
@@ -29,7 +28,6 @@ class PluginConfigurator extends React.Component {
       digestPath: props.configuration.digestPath || "",
       keyChangeNotificationPath: props.configuration.keyChangeNotificationPath || "",
       outputs: props.configuration.outputs || [],
-      defaultMethods: props.configuration.defaultMethods || {}
     }
 
     this.options = _.cloneDeep(this.props.configuration);
@@ -39,7 +37,6 @@ class PluginConfigurator extends React.Component {
     this.setOutput = this.setOutput.bind(this);
     this.deleteOutput = this.deleteOutput.bind(this);
     this.createOutput = this.createOutput.bind(this);
-    this.setDefaultMethods = this.setDefaultMethods.bind(this);
   }
 
   setIgnorePaths(text) {
@@ -63,10 +60,10 @@ class PluginConfigurator extends React.Component {
     this.state.outputs.forEach(output => {
       if (output.name === name) {
         switch (property) {
-          case 'name': newOutputs.push({ name: value, path: output.path, methods: output.methods, suppressionPath: output.suppressionPath }); break;
-          case 'path': newOutputs.push({ name: output.name, path: value , methods: output.methods, suppressionPath: output.suppressionPath }); break;
-          case 'methods': newOutputs.push({ name: output.name, path: output.path, methods: value, suppressionPath: output.suppressionPath }); break;
-          case 'suppressionPath': newOutputs.push({ name: output.name, path: output.path, methods: output.methods, suppressionPath: value }); break;
+          case 'name': newOutputs.push({ name: value, path: output.path, states: output.states, suppressionPath: output.suppressionPath }); break;
+          case 'path': newOutputs.push({ name: output.name, path: value , states: output.states, suppressionPath: output.suppressionPath }); break;
+          case 'states': newOutputs.push({ name: output.name, path: output.path, states: value, suppressionPath: output.suppressionPath }); break;
+          case 'suppressionPath': newOutputs.push({ name: output.name, path: output.path, states: output.states, suppressionPath: value }); break;
         }
       } else {
         newOutputs.push(output);
@@ -91,27 +88,13 @@ class PluginConfigurator extends React.Component {
         newOutputs.push({
           name: newNames[i],
           path: "notifications.plugins.alarm-manager." + newNames[i],
-          methods: [],
+          states: [],
           suppressionPath: ""
         });
         break;  
       }
     };
     this.setState({ outputs: newOutputs, saveButtonDisabled: false, cancelButtonDisabled: false });
-  }
-
-  setDefaultMethods(method, methods) {
-    var newDefaultMethods = {};
-    switch (method) {
-      case 'customMethods':
-        newDefaultMethods['customMethods'] = methods.split(',').map(v => v.trim()).sort().join(', ');
-      default:
-        Object.keys(this.state.defaultMethods).forEach(key => {
-          newDefaultMethods[key] = (key === method)?methods:this.state.defaultMethods[key];
-        });
-        break;
-      }
-    this.setState({ defaultMethods: newDefaultMethods, saveButtonDisabled: false, cancelButtonDisabled: false });
   }
 
   render() {
@@ -154,21 +137,12 @@ class PluginConfigurator extends React.Component {
               collapsiblePanelStyle={collapsiblePanelStyle}
               collapsibleLabel='Outputs'
               panelStyle={panelStyle}
-              notificationMethods={defaultNotificationMethods.concat(this.state.defaultMethods.customMethods.split(',').map(v => v.trim()))}
+              alarmStates={alarmStates}
               outputs={this.state.outputs}
               onChangeCallback={this.setOutput}
               onDeleteCallback={this.deleteOutput}
               onCreateCallback={this.createOutput}
               />
-            <DefaultMethods
-              labelWidth={labelWidth}
-              collapsibleLabel='Methods'
-              collapsibleTriggerStyle={collapsibleTriggerStyle}
-              collapsiblePanelStyle={collapsiblePanelStyle}
-              notificationMethods={defaultNotificationMethods.concat(this.state.defaultMethods.customMethods.split(',').map(v => v.trim()))}
-              methods={this.state.defaultMethods}
-              onChangeCallback={this.setDefaultMethods}
-            />
           </Col>
         </FormGroup>
         <FormGroup row>

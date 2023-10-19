@@ -7,7 +7,7 @@ import FormField from './FormField';
  * 
  * panelStyle - CSS for the panel.
  * labelWidth - the width mod 12 reserved for the input field label.
- * notificationStates - array of notification states used in Select.
+ * alarmStates - array of notification states used in Select.
  * output - the output channel configuration object.
  * onChangeCallback - method to be called when a field change occurs.
  * onDeleteCallback - method to be called to delete this channel.
@@ -18,7 +18,7 @@ import FormField from './FormField';
 export default function Output({
   panelStyle={},
   labelWidth='3',
-  notificationMethods=[],
+  alarmStates=[],
   output,
   onChangeCallback,
   onDeleteCallback
@@ -35,9 +35,9 @@ export default function Output({
         onChangeCallback={(v) => onChangeCallback(output.name, 'path', v)}
       />
       <FormField
-        type='multiselect' label='Trigger methods' labelWidth={labelWidth} value={output.methods.map(s => ({ label: s, value: s}))} 
-        options={notificationMethods.map(s => ({ label: s, value: s }))}
-        onChangeCallback={(v) => onChangeCallback(output.name, 'methods', (v || []).map(s => s.value))}
+        type='multiselect' label='Trigger states' labelWidth={labelWidth} value={output.states.map(s => ({ label: s, value: s}))} 
+        options={alarmStates.map(s => ({ label: s, value: s }))}
+        onChangeCallback={(v) => onChangeCallback(output.name, 'states', (v || []).map(s => s.value))}
       />
       <FormField
         type='text' label='Suppression path' labelWidth={labelWidth} value={output.suppressionPath}
