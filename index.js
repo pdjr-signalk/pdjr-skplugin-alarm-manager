@@ -191,9 +191,6 @@ module.exports = function (app) {
    * @param {*} unsubscribes - array of unsubscribes functions.
    */
   function startAlarmMonitoring(alarmPaths, digest, unsubscribes) {
-    console.log("----------");
-    JSON.stringify((new Notification(app, true)).getNotifications(), null, 2);
-    console.log("----------");
     alarmPaths.forEach(path => {
       const zones = (app.getSelfPath(path + ".meta")).zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
       unsubscribes.push(app.streambundle.getSelfStream(path).skipDuplicates().map((v) => getZoneContainingValue(zones, v)).skipDuplicates((ov,nv) => (((ov)?ov.state:null) == ((nv)?nv.state:null))).onValue(activeZone => {
@@ -205,9 +202,9 @@ module.exports = function (app) {
             digest[path] = notification;
             (new App(app)).notify(path, notification, plugin.id);
             console.log("----------");
-            JSON.stringify((new Notification(app, true)).getNotifications((x)=>true), null, 2);
+            JSON.stringify((new Notification(app, true)).getNotifications(), null, 2);
             console.log("----------");
-                    updated = true;
+            updated = true;
           }
         } else {
           app.debug("cancelling notification on '%s'", path);
