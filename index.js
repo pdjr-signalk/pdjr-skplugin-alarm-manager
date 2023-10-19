@@ -202,7 +202,7 @@ module.exports = function (app) {
             digest[path] = notification;
             (new App(app)).notify(path, notification, plugin.id);
             console.log("----------");
-            JSON.stringify((new Notification(app, true)).getNotifications(), null, 2);
+            console.log(JSON.stringify((new Notification(app, true)).getNotifications(), null, 2));
             console.log("----------");
             updated = true;
           }
