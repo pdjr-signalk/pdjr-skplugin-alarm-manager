@@ -192,7 +192,7 @@ module.exports = function (app) {
    */
   function startAlarmMonitoring(alarmPaths, digest, unsubscribes) {
     console.log("----------");
-    JSON.stringify((new Notification(app, true)).getNotifications((n)=>true), null, 2);
+    JSON.stringify((new Notification(app, true)).getNotifications(), null, 2);
     console.log("----------");
     alarmPaths.forEach(path => {
       const zones = (app.getSelfPath(path + ".meta")).zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
