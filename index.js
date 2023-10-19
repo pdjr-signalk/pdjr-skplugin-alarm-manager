@@ -201,9 +201,6 @@ module.exports = function (app) {
             const notification = (new Notification(app)).makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
             digest[path] = notification;
             (new App(app)).notify(path, notification, plugin.id);
-            console.log("----------");
-            console.log(JSON.stringify((new Notification(app, true)).getNotifications(), null, 2));
-            console.log("----------");
             updated = true;
           }
         } else {
