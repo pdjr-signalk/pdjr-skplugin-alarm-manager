@@ -23,14 +23,14 @@ This digest provides a convenient data set for use by software
 annunciators or other alarm consumers.
 
 Thirdly, the plugin operates zero or more suppressable output channels
-which are configured to react to one or more alarm method triggers.
-When an alarm notification with one of the configured method trigger
+which are configured to react to one or more alarm state triggers.
+When an alarm notification with one of the configured trigger
 states is raised the output channel is enabled.
 
 An active output channel can be suppressed by supplying a transient
-true value on a configured key.
-Suppression is operates at the digest notification level and applies
-to just those alarm states for which the output channel is configured
+true value on a specified key.
+Suppression is operates at the notification level and applies
+to just those notifications for which the output channel is configured
 and which are being notified at the moment of suppression.
 This means that if a new notification appears or an existing
 notification changes state then the alarm output channel
@@ -141,40 +141,6 @@ plugin's JSON configuration file.
             if the arriving notification has a state equal to <em>on_state</em>.
           </dd>
       </dl>
-  <dt>Methods... <code>methods</code></dt>
-    <dd>
-    Reveals and hides the configuration of the suggested methods which will
-    be applied to Signal K keys for each possible alarm state when key metadata
-    does not include an explicit method property.
-    <dl>
-      <dt>Custom methods <code>customMethods</code></dt>
-      <dd>
-        A comma-separated list of method names which can be applied to
-        notifications in addition to the Signal K defaults of 'sound'
-        and 'visual'.
-      </dd>
-      <dt>Methods used for ALERT <code>alert</code></dt>
-      <dd>
-        Methods to be included in the 'method' property of notifications
-        with a state property value of 'alert'.
-      </dd>
-      <dt>Methods used for WARN <code>warn</code></dt>
-      <dd>
-        Methods to be included in the 'method' property of notifications
-        with a state property value of 'warn'.
-      </dd>
-      <dt>Methods used for ALARM <code>alarm</code></dt>
-      <dd>
-        Methods to be included in the 'method' property of notifications
-        with a state property value of 'alarm'.
-      </dd>
-      <dt>Methods used for EMERGENCY <code>emergency</code></dt>
-      <dd>
-        Methods to be included in the 'method' property of notifications
-        with a state property value of 'emergency'.
-      </dd>
-    </dl>
-  </dd>
 </dl>
 
 ### Example configuration
@@ -212,14 +178,7 @@ to push notifications from Signal K to remote system users.
         "triggerStates": [ "alarm", "emergency" ],
         "suppressionPath": "electrical.switches.bank.0.12.state"
       }
-    ],
-    "methods": {
-      "customMethods": "push, email",
-      "alert": [ "visual" ],
-      "warn": [ "visual" ],
-      "alarm": [ "visual", "sound", "push", "email" ],
-      "emergency": [ "visual", "sound", "push", "email" ]
-    }
+    ]
   }
 }
 ```
