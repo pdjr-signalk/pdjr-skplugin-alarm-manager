@@ -87,7 +87,6 @@ const PLUGIN_SCHEMA = {
 };
 const PLUGIN_UISCHEMA = {};
 
-
 module.exports = function (app) {
   var plugin = {};
   var unsubscribes = [];
@@ -122,6 +121,7 @@ module.exports = function (app) {
         var stream = app.streambundle.getSelfStream(output.suppressionPath);
         resistantUnsubscribes.push(stream.skipDuplicates().onValue(v => {
           if (v == 1) {
+            app.debug("suppressing output channel '%s'", output);
             Object.keys(notificationDigest).forEach(key => {
               if (!notificationDigest[key].actions.includes(output.name)) notificationDigest[key].actions.push(output.name);
             })     
@@ -160,11 +160,12 @@ module.exports = function (app) {
   }
 
   /**
-   * Identify all data paths in the current data store which support
-   * alarm operation and compares this with the collection currently in
-   * use. If there is a difference, then unsubscribe the current
-   * collection, notify a key change and call startAlarmMonitoring()
-   * with the new set of data paths. 
+   * Start or re-start the alarm monitor function by identifying all
+   * data paths in the current data store which support alarm operation
+   * and compares this with the collection currently in use. If there
+   * is a difference, then unsubscribe the current collection, notify
+   * a key change and call startAlarmMonitoring() with the new set of
+   * data paths.
    * 
    * @param {*} digest - the alarm digest.
    * @param {*} unsubscribes - stream unsubscribe function array.
