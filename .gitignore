@@ -1,3 +1,6 @@
+.DS_Store
+*.tgz
+
 # Static files in the folder created by webpack
 public/*
 !public/index.html
