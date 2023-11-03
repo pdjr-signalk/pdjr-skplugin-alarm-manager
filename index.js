@@ -124,7 +124,7 @@ module.exports = function (app) {
       }, [])
     }
 
-    app.debug("using configuration: %s", JSON.stringify(plugin.options, null, 2));
+    app.debug(`using configuration: ${JSON.stringify(plugin.options, null, 2)}`);
 
     // Subscribe to any suppression paths configured for the output
     // channels and persist these across the lifetime of the plugin.
@@ -133,7 +133,7 @@ module.exports = function (app) {
         var stream = app.streambundle.getSelfStream(output.suppressionPath);
         resistantUnsubscribes.push(stream.skipDuplicates().onValue(v => {
           if (v == 1) {
-            app.debug("suppressing output channel '%s'", output);
+            app.debug(`suppressing output channel '${output.name}'`);
             Object.keys(notificationDigest).forEach(key => {
               if (!notificationDigest[key].actions.includes(output.name)) notificationDigest[key].actions.push(output.name);
             })     
@@ -185,7 +185,7 @@ module.exports = function (app) {
   function startAlarmMonitoringMaybe(digest, unsubscribes) {
     var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths);
     if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
-      log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
+      log.N(`monitoring ${availableAlarmPaths.length} alarm path${(availableAlarmPaths.length == 1)?'':'s'}`);
       alarmPaths = availableAlarmPaths;
       if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
       if (plugin.options.keyChangeNotificationPath) plugin.App.notify(plugin.options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }, plugin.id);
@@ -205,19 +205,19 @@ module.exports = function (app) {
    */
   function startAlarmMonitoring(alarmPaths, digest, unsubscribes) {
     alarmPaths.forEach(path => {
-      const zones = (app.getSelfPath(path + ".meta")).zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
+      const zones = (app.getSelfPath(`${path}.meta`)).zones.sort((a,b) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
       unsubscribes.push(app.streambundle.getSelfStream(path).skipDuplicates().map((v) => getZoneContainingValue(zones, v)).skipDuplicates((ov,nv) => (((ov)?ov.state:null) == ((nv)?nv.state:null))).onValue(activeZone => {
         var updated = false;
         if (activeZone) {
           if ((!digest[path]) || (digest[path].state != activeZone.state)) {
-            app.debug("issuing '%s' notification on '%s'", activeZone.state, path);
+            app.debug(`issuing '${activeZone.state}' notification on '${path}'`);
             const notification = (new Notification(app)).makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
             digest[path] = notification;
             plugin.App.notify(path, notification, plugin.id);
             updated = true;
           }
         } else {
-          app.debug("cancelling notification on '%s'", path);
+          app.debug(`cancelling notification on '${path}'`);
           if (digest[path]) {
             delete digest[path];
             plugin.App.notify(path, null, plugin.id);
@@ -241,26 +241,26 @@ module.exports = function (app) {
     var matches;
     if ((matches = output.path.match(/^electrical\.switches\.(.*)\.state$/)) && (matches == 2)) {
       if (output.lastUpdateState != state) {
-        app.debug("updating switch output '%s' to state %d", output.name, state);
+        app.debug(`updating switch output '${output.name}' to state ${state}`);
         app.putSelfPath(output.path, state);
         output.lastUpdateState = state;
       }
     } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)\:(.*)$/)) && (matches.length == 4)) {
       var notificationState = (state)?matches[2]:matched[3];
       if (output.lastUpdateState != state) {
-        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], { 'message': path, 'state': notificationState, 'method': [] }).commit().clear();
+        plugin.App.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
         output.lastUpdateState = state;
       }
     } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)$/)) && (matches.length == 3)) {
       notificationState = (state)?matches[2]:null;
       if (output.lastUpdateState != state) {
-        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': path, 'state': notificationState, 'method': [] }:null).commit().clear();
+        plugin.App.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
         output.lastUpdateState = state;
       }
     } else if ((matches = output.path.match(/^notifications\.(.*)$/)) && (matches.length == 2)) {
       notificationState = (state)?'normal':null;
       if (output.lastUpdateState != state) {
-        (new Delta(app, plugin.id)).addValue("notifications." + matches[1], (state)?{ 'message': path, 'state': notificationState, 'method': [] }:null).commit().clear();
+        plugin.App.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
         output.lastUpdateState = state;
       }
     } else {
@@ -303,7 +303,7 @@ module.exports = function (app) {
   function getAlarmPaths(availablePaths, ignorePaths) {
     var retval = availablePaths
       .filter(p => (!(ignorePaths.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
-      .filter(p => { var meta = app.getSelfPath(p + ".meta"); return((meta) && (meta.zones) && (meta.zones.length > 0)); }); 
+      .filter(p => { var meta = app.getSelfPath(`${p}.meta`); return((meta) && (meta.zones) && (meta.zones.length > 0)); }); 
     return(retval.sort());
   }
 
@@ -326,7 +326,7 @@ module.exports = function (app) {
    */
 
   function handleRoutes(req, res) {
-    app.debug("processing %s request on %s", req.method, req.path);
+    app.debug(`processing ${req.method} request on '${req.path}'`);
     try {
       switch (req.path.slice(0, (req.path.indexOf('/', 1) == -1)?undefined:req.path.indexOf('/', 1))) {
         case '/keys':
@@ -365,7 +365,7 @@ module.exports = function (app) {
     function expressSend(res, code, body = null, debugPrefix = null) {
       const FETCH_RESPONSES = { 200: null, 201: null, 400: "bad request", 403: "forbidden", 404: "not found", 503: "service unavailable (try again later)", 500: "internal server error" };
       res.status(code).send((body)?body:((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null));
-      if (debugPrefix) app.debug("%s: %d %s", debugPrefix, code, ((body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)));
+      if (debugPrefix) app.debug(`${debugPrefix}: ${code} ${(body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)}`);
       return(false);
     }
   }
