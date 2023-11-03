@@ -30,15 +30,12 @@
   },
   "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme",
   "dependencies": {
-    "lodash": "^4.17.21",
     "signalk-libapp": "github:pdjr-signalk/signalk-libapp",
     "signalk-libdelta": "github:pdjr-signalk/signalk-libdelta",
     "signalk-liblog": "github:pdjr-signalk/signalk-liblog",
-    "signalk-libnotification": "github:pdjr-signalk/signalk-libnotification",
-    "sprintf-js": "^1.1.2"
+    "signalk-libnotification": "github:pdjr-signalk/signalk-libnotification"
   },
   "directories": {
-    "lib": "lib"
   },
   "peerDependencies": {
     "react": "^16.14.0",
