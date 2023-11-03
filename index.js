@@ -17,7 +17,7 @@
 const Log = require("signalk-liblog/Log.js");
 const Delta = require("signalk-libdelta/Delta.js");
 const Notification = require("signalk-libnotification/Notification.js");
-const App = require('signalk-libapp/App.js');
+const MyApp = require('signalk-libapp/App.js');
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
 const PATH_CHECK_INTERVAL = 20; // seconds
@@ -63,7 +63,7 @@ const PLUGIN_SCHEMA = {
             "description": "This can be a switch path or a notification path",
             "type": "string"
           },
-          "states": {
+          "triggerStates": {
             "title": "Trigger states",
             "description": "Alarm states which will modulate this output",
             "type": "array",
@@ -79,8 +79,8 @@ const PLUGIN_SCHEMA = {
             "type": "string"
           }
         },
-        "required" : [ "name", "path", "states" ],
-        "default": []
+        "required" : [ "name", "path", "triggerStates" ],
+        "default": { triggerStates: ALARM_STATES }
       }
     }
   }
@@ -100,6 +100,7 @@ module.exports = function (app) {
   plugin.description = PLUGIN_DESCRIPTION;
   plugin.schema = PLUGIN_SCHEMA;
   plugin.uiSchema = PLUGIN_UISCHEMA;
+  plugin.App = new MyApp(app);
 
   const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   
@@ -107,11 +108,22 @@ module.exports = function (app) {
 
     // Expand options to include any schema default and save
     // result to plugin scope.
-    plugin.options = {};
-    plugin.options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default;
-    plugin.options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default;
-    plugin.options.keyChangeNotificationPath = options.keyChangeNotificationPath || plugin.schema.properties.keyChangeNotificationPath.default;
-    plugin.options.outputs = options.outputs || plugin.schema.properties.outputs.default;
+    plugin.options = {
+      ignorePaths: options.ignorePaths || plugin.schema.properties.ignorePaths.default,
+      digestPath: options.digestPath || plugin.schema.properties.digestPath.default,
+      keyChangeNotificationPath: options.keyChangeNotificationPath || plugin.schema.properties.keyChangeNotificationPath.default,
+      outputs: (options.outputs || []).reduce((a, output) => {
+        try {
+          var validOutput = { ...plugin.schema.properties.outputs.items.default, ...output };
+          if (!validOutput.name) throw new Error("missing 'name' property");
+          if (!validOutput.path) throw new Error("missing 'path' property");
+          if (!validOutput.triggerStates.reduce((a,v) => (a && plugin.schema.properties.outputs.items.properties.triggerStates.items.enum.includes(v)), true)) throw new Error("invalid 'triggerStates' property");
+          a.push(validOutput);
+        } catch(e) { log.W(`dropping output channel '(${e.message})`); }
+        return(a);
+      }, [])
+    }
+
     app.debug("using configuration: %s", JSON.stringify(plugin.options, null, 2));
 
     // Subscribe to any suppression paths configured for the output
@@ -176,7 +188,7 @@ module.exports = function (app) {
       log.N("monitoring %d alarm path%s", availableAlarmPaths.length, (availableAlarmPaths.length == 1)?"":"s");
       alarmPaths = availableAlarmPaths;
       if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
-      if (plugin.options.keyChangeNotificationPath) (new App(app)).notify(plugin.options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }, plugin.id);
+      if (plugin.options.keyChangeNotificationPath) plugin.App.notify(plugin.options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }, plugin.id);
       startAlarmMonitoring(alarmPaths, digest, unsubscribes);
     }
   }
@@ -201,14 +213,14 @@ module.exports = function (app) {
             app.debug("issuing '%s' notification on '%s'", activeZone.state, path);
             const notification = (new Notification(app)).makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
             digest[path] = notification;
-            (new App(app)).notify(path, notification, plugin.id);
+            plugin.App.notify(path, notification, plugin.id);
             updated = true;
           }
         } else {
           app.debug("cancelling notification on '%s'", path);
           if (digest[path]) {
             delete digest[path];
-            (new App(app)).notify(path, null, plugin.id);
+            plugin.App.notify(path, null, plugin.id);
             updated = true;
           }
         }
@@ -218,7 +230,7 @@ module.exports = function (app) {
             var activeDigestStates = Object.keys(digest)
             .filter(key => !digest[key].actions.includes(output.name)) // discard suppressed notifications
             .map(key => (digest[key].state));             // isolate the notification's state
-            updateOutput(output, (output.states.reduce((a,state) => (activeDigestStates.includes(state) || a), false))?1:0, path);
+            updateOutput(output, (output.triggerStates.reduce((a,state) => (activeDigestStates.includes(state) || a), false))?1:0, path);
           });
         }
       }));
