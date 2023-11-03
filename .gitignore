@@ -1,4 +1,5 @@
 .DS_Store
+node_modules
 *.tgz
 
 # Static files in the folder created by webpack
