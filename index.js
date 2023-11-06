@@ -167,9 +167,7 @@ module.exports = function (app) {
     router.patch('/suppress/:name', handleRoutes);
   }
 
-  plugin.getOpenApi = function() {
-    require("./resources/openApi.json");
-  }
+  plugin.getOpenApi = () => require("./resources/openApi.json");
 
   /**
    * Start or re-start the alarm monitor function by identifying all
