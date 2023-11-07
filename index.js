@@ -209,7 +209,7 @@ module.exports = function (app) {
         if (activeZone) {
           if ((!digest[path]) || (digest[path].state != activeZone.state)) {
             app.debug(`issuing '${activeZone.state}' notification on '${path}'`);
-            const notification = (new Notification(app)).makeNotification(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
+            const notification = Notification.canonicalise(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
             digest[path] = notification;
             plugin.App.notify(path, notification, plugin.id);
             updated = true;
