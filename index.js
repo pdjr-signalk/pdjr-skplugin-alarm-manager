@@ -17,7 +17,7 @@
 const Log = require("signalk-liblog/Log.js");
 const Delta = require("signalk-libdelta/Delta.js");
 const Notification = require("signalk-libnotification/Notification.js");
-const MyApp = require('signalk-libapp/App.js');
+const App = require('signalk-libapp/App.js');
 
 const ALARM_STATES = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
 const PATH_CHECK_INTERVAL = 20; // seconds
@@ -92,7 +92,7 @@ module.exports = function (app) {
   var unsubscribes = [];
   var resistantUnsubscribes = [];
   var alarmPaths = [];
-  var notificationDigest = { };
+  var notificationDigest = {};
   var intervalId = null;
 
   plugin.id = PLUGIN_ID;
@@ -100,9 +100,8 @@ module.exports = function (app) {
   plugin.description = PLUGIN_DESCRIPTION;
   plugin.schema = PLUGIN_SCHEMA;
   plugin.uiSchema = PLUGIN_UISCHEMA;
-  plugin.App = new MyApp(app);
-
-  const log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
+  plugin.app = new App(app);
+  plugin.log = new Log(plugin.id, { ncallback: app.setPluginStatus, ecallback: app.setPluginError });
   
   plugin.start = function(options, restartPlugin) {
 
@@ -119,7 +118,7 @@ module.exports = function (app) {
           if (!validOutput.path) throw new Error("missing 'path' property");
           if (!validOutput.triggerStates.reduce((a,v) => (a && plugin.schema.properties.outputs.items.properties.triggerStates.items.enum.includes(v)), true)) throw new Error("invalid 'triggerStates' property");
           a.push(validOutput);
-        } catch(e) { log.W(`dropping output channel '(${e.message})`); }
+        } catch(e) { plugin.log.W(`dropping output channel '(${e.message})`); }
         return(a);
       }, [])
     }
@@ -183,10 +182,10 @@ module.exports = function (app) {
   function startAlarmMonitoringMaybe(digest, unsubscribes) {
     var availableAlarmPaths = getAlarmPaths(app.streambundle.getAvailablePaths(), plugin.options.ignorePaths);
     if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
-      log.N(`monitoring ${availableAlarmPaths.length} alarm path${(availableAlarmPaths.length == 1)?'':'s'}`);
+      plugin.log.N(`monitoring ${availableAlarmPaths.length} alarm path${(availableAlarmPaths.length == 1)?'':'s'}`);
       alarmPaths = availableAlarmPaths;
       if (unsubscribes.length > 0) { unsubscribes.forEach(f => f()); unsubscribes = []; }
-      if (plugin.options.keyChangeNotificationPath) plugin.App.notify(plugin.options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }, plugin.id);
+      if (plugin.options.keyChangeNotificationPath) plugin.app.notify(plugin.options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }, plugin.id);
       startAlarmMonitoring(alarmPaths, digest, unsubscribes);
     }
   }
@@ -211,14 +210,14 @@ module.exports = function (app) {
             app.debug(`issuing '${activeZone.state}' notification on '${path}'`);
             const notification = Notification.canonicalise(path, { state: activeZone.state, method: activeZone.method, message: activeZone.message });
             digest[path] = notification;
-            plugin.App.notify(path, notification, plugin.id);
+            plugin.app.notify(path, notification, plugin.id);
             updated = true;
           }
         } else {
           app.debug(`cancelling notification on '${path}'`);
           if (digest[path]) {
             delete digest[path];
-            plugin.App.notify(path, null, plugin.id);
+            plugin.app.notify(path, null, plugin.id);
             updated = true;
           }
         }
@@ -246,19 +245,19 @@ module.exports = function (app) {
     } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)\:(.*)$/)) && (matches.length == 4)) {
       var notificationState = (state)?matches[2]:matched[3];
       if (output.lastUpdateState != state) {
-        plugin.App.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
+        plugin.app.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
         output.lastUpdateState = state;
       }
     } else if ((matches = output.path.match(/^notifications\.(.*)\:(.*)$/)) && (matches.length == 3)) {
       notificationState = (state)?matches[2]:null;
       if (output.lastUpdateState != state) {
-        plugin.App.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
+        plugin.app.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
         output.lastUpdateState = state;
       }
     } else if ((matches = output.path.match(/^notifications\.(.*)$/)) && (matches.length == 2)) {
       notificationState = (state)?'normal':null;
       if (output.lastUpdateState != state) {
-        plugin.App.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
+        plugin.app.notify(`notifications.${matches[1]}`, { state: notificationState, method: [], message: path }, plugin.id);
         output.lastUpdateState = state;
       }
     } else {
