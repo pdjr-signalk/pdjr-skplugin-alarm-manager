@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: HTTP API for pdjr-skplugin-alarm-manager
+  title: pdjr-skplugin-alarm-manager API
   version: 1.0.0
   license:
     name: Apache 2.0
