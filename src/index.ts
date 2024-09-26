@@ -262,65 +262,66 @@ module.exports = function (app: any) {
       resistantUnsubscribes = [];
     },
 
-    registerWithRouter: function(router) {
-      router.get('/keys', handleRoutes);
-      router.get('/digest/', handleRoutes);
-      router.get('/outputs/', handleRoutes);
-      router.get('/output/:name', handleRoutes);
-      router.patch('/suppress/:name', handleRoutes);
-
-      function handleRoutes(req: any, res: any) {
-        app.debug(`processing ${req.method} request on '${req.path}'`);
-        try {
-          switch (req.path.slice(0, (req.path.indexOf('/', 1) == -1)?undefined:req.path.indexOf('/', 1))) {
-            case '/keys':
-              expressSend(res, 200, alarmPaths, req.path);
-              break;
-            case '/digest':
-              expressSend(res, 200, notificationDigest, req.path);
-              break;
-            case '/outputs':
-              expressSend(res, 200, options.outputs.reduce((a: { [id: string]: number }, v: Output) => { a[v.name] = Number(v.lastUpdateState); return(a); }, {}), req.path);
-              break;
-            case '/output':
-              var output = options.outputs.reduce((a: Output, o: Output) => ((o.name == req.params.name)?o:a), null);
-              if (output) {
-                expressSend(res, 200, new Number(output.lastUpdateState), req.path);
-              } else {
-                expressSend(res, 404, "404: invalid request", req.path);
-              }
-              break;
-            case '/suppress':
-              if (options.outputs.map((output: Output) => output.name).includes(req.params.name)) {
-                Object.keys(notificationDigest).forEach(key => {
-                  if (!notificationDigest[key].suppressedOutputs.includes(req.params.name)) notificationDigest[key].suppressedOutputs.push(req.params.name);
-                });
-                expressSend(res, 200, null, req.path);
-              } else {
-                expressSend(res, 404, "404: invalid request", req.path);
-              }
-              break;
-          }
-        } catch(e: any) {
-          app.debug(e.message);
-          expressSend(res, ((/^\d+$/.test(e.message))?parseInt(e.message):500), null, req.path);
-        }
-    
-        function expressSend(res: any, code: number, body: any | null = null, debugPrefix: string | null = null) {
-          const FETCH_RESPONSES: { [id: number]: string | null } = { 200: null, 201: null, 400: "bad request", 403: "forbidden", 404: "not found", 503: "service unavailable (try again later)", 500: "internal server error" };
-          res.status(code).send((body)?body:((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null));
-          if (debugPrefix) app.debug(`${debugPrefix}: ${code} ${(body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)}`);
-          return(false);
-        }    
-
-      }
+    registerWithRouter: function(router: any) {
+      router.get('/keys', plugin.handleRoutes);
+      router.get('/digest/', plugin.handleRoutes);
+      router.get('/outputs/', plugin.handleRoutes);
+      router.get('/output/:name', plugin.handleRoutes);
+      router.patch('/suppress/:name', plugin.handleRoutes);
     },
   
     getOpenApi: function() {
       return(require("./resources/openApi.json"))
+    },
+
+
+    handleRoutes: function(req: any, res: any) {
+      app.debug(`processing ${req.method} request on '${req.path}'`);
+      try {
+        switch (req.path.slice(0, (req.path.indexOf('/', 1) == -1)?undefined:req.path.indexOf('/', 1))) {
+          case '/keys':
+            expressSend(res, 200, alarmPaths, req.path);
+            break;
+          case '/digest':
+            expressSend(res, 200, notificationDigest, req.path);
+            break;
+          case '/outputs':
+            expressSend(res, 200, options.outputs.reduce((a: { [id: string]: number }, v: Output) => { a[v.name] = Number(v.lastUpdateState); return(a); }, {}), req.path);
+            break;
+          case '/output':
+            var output = options.outputs.reduce((a: Output, o: Output) => ((o.name == req.params.name)?o:a), null);
+            if (output) {
+              expressSend(res, 200, new Number(output.lastUpdateState), req.path);
+            } else {
+              expressSend(res, 404, "404: invalid request", req.path);
+            }
+            break;
+          case '/suppress':
+            if (options.outputs.map((output: Output) => output.name).includes(req.params.name)) {
+              Object.keys(notificationDigest).forEach(key => {
+                if (!notificationDigest[key].suppressedOutputs.includes(req.params.name)) notificationDigest[key].suppressedOutputs.push(req.params.name);
+              });
+              expressSend(res, 200, null, req.path);
+            } else {
+              expressSend(res, 404, "404: invalid request", req.path);
+            }
+            break;
+        }
+      } catch(e: any) {
+        app.debug(e.message);
+        expressSend(res, ((/^\d+$/.test(e.message))?parseInt(e.message):500), null, req.path);
+      }
+  
+      function expressSend(res: any, code: number, body: any | null = null, debugPrefix: string | null = null) {
+        const FETCH_RESPONSES: { [id: number]: string | null } = { 200: null, 201: null, 400: "bad request", 403: "forbidden", 404: "not found", 503: "service unavailable (try again later)", 500: "internal server error" };
+        res.status(code).send((body)?body:((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null));
+        if (debugPrefix) app.debug(`${debugPrefix}: ${code} ${(body)?JSON.stringify(body):((FETCH_RESPONSES[code])?FETCH_RESPONSES[code]:null)}`);
+        return(false);
+      }    
     }
 
   }
+
   return(plugin);
 }
 
@@ -334,7 +335,9 @@ interface SKPlugin {
   start: (options: any) => void,
   stop: () => void,
   registerWithRouter: (router: any) => void,
-  getOpenApi: () => string
+  getOpenApi: () => string,
+
+  handleRoutes: (req: any, res: any) => void
 }
 
 interface Output {
