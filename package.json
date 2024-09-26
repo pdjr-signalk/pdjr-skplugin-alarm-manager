@@ -30,7 +30,9 @@
     "url": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager/issues"
   },
   "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme",
-  "directories": {},
+  "directories": {
+    "resources": "./directories"
+  },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.15.4",
     "@types/node": "^22.7.2",
