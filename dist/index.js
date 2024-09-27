@@ -99,7 +99,7 @@ module.exports = function (app) {
             let delta = new signalk_libdelta_1.Delta(app, plugin.id);
             // Caonicalise options
             app.options = canonicaliseOptions(options);
-            app.debug(`using configuration: ${JSON.stringify(options, null, 2)}`);
+            app.debug(`using configuration: ${JSON.stringify(app.options, null, 2)}`);
             // Subscribe to any suppression paths configured for the output
             // channels and persist these across the lifetime of the plugin.
             app.options.outputs.forEach((output) => {
