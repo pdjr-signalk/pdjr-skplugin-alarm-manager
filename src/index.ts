@@ -102,46 +102,52 @@ module.exports = function (app: any) {
     start: function(options: any) {
       let delta = new Delta(app, plugin.id)
 
-      // Expand options to include any schema defaults.
-      options.ignorePaths = options.ignorePaths || plugin.schema.properties.ignorePaths.default
-      options.digestPath = options.digestPath || plugin.schema.properties.digestPath.default
-      options.keyChangeNotificationPath = options.keyChangeNotificationPath || plugin.schema.properties.keyChangeNotificationPath.default
-      options.outputs = (options.outputs || []).reduce((a: Output[], output: Output) => {
-        try {
-          let validOutput: Output = { ...plugin.schema.properties.outputs.items.default, ...output };
-          if (!validOutput.name) throw new Error("missing 'name' property");
-          if (!validOutput.path) throw new Error("missing 'path' property");
-          if (!validOutput.triggerStates.reduce((a,v) => (a && plugin.schema.properties.outputs.items.properties.triggerStates.items.enum.includes(v)), true)) throw new Error("invalid 'triggerStates' property");
-          a.push(validOutput);
-        } catch(e: any) { app.debug(`dropping output channel '(${e.message})`); }
-        return(a);
-      }, [])
-
+      // Caonicalise options
+      app.options = canonicaliseOptions(options)
       app.debug(`using configuration: ${JSON.stringify(options, null, 2)}`)
-      app.options = options
 
       // Subscribe to any suppression paths configured for the output
       // channels and persist these across the lifetime of the plugin.
-      if (options.outputs) {
-        options.outputs.forEach((output: Output) => {
+      app.options.outputs.forEach((output: Output) => {
+        if (output.suppressionPath) {
           let stream: any = app.streambundle.getSelfStream(output.suppressionPath)
           resistantUnsubscribes.push(stream.skipDuplicates().onValue((v: number) => {
             if (v == 1) {
-              app.debug(`suppressing output channel '${output.name}'`);
+              app.debug(`suppressing output channel '${output.name}'`)
               Object.keys(notificationDigest).forEach(key => {
-                if (!notificationDigest[key].actions.includes(output.name)) notificationDigest[key].actions.push(output.name);
+                if (!notificationDigest[key].actions.includes(output.name)) notificationDigest[key].actions.push(output.name)
               })     
             }
-          }));
-        });
-      }
+          }))
+        }
+      })
     
       // Repeatedly check the available key set for those that are
       // configured for alarm use.
       intervalId = setInterval(() => { startAlarmMonitoringMaybe() }, (PATH_CHECK_INTERVAL * 1000));
 
+      function canonicaliseOptions(options: any): Schema {
+        let retval: Schema = {
+          ignorePaths: options.ignorePaths || plugin.schema.properties.ignorePaths.default,
+          digestPath: options.digestPath || plugin.schema.properties.digestPath.default,
+          keyChangeNotificationPath: options.keyChangeNotificationPath || plugin.schema.properties.keyChangeNotificationPath.default,
+          outputs: []
+        };
+        retval.outputs = (options.outputs || []).reduce((a: Output[], output: Output) => {
+          try {
+            let validOutput: Output = { ...plugin.schema.properties.outputs.items.default, ...output };
+            if (!validOutput.name) throw new Error("missing 'name' property");
+            if (!validOutput.path) throw new Error("missing 'path' property");
+            if (!validOutput.triggerStates.reduce((a,v) => (a && plugin.schema.properties.outputs.items.properties.triggerStates.items.enum.includes(v)), true)) throw new Error("invalid 'triggerStates' property");
+            a.push(validOutput);
+          } catch(e: any) { app.debug(`dropping output channel '(${e.message})`); }
+          return(a);
+        }, [])
+        return(retval)
+      }
+
       function startAlarmMonitoringMaybe() {
-        let availableAlarmPaths = getAvailableAlarmPaths(app, options.ignorePaths);
+        let availableAlarmPaths = getAvailableAlarmPaths(app, app.options.ignorePaths);
         if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
           app.setPluginStatus(`Started: monitoring ${availableAlarmPaths.length} alarm path${(availableAlarmPaths.length == 1)?'':'s'}`);
           alarmPaths = availableAlarmPaths;
@@ -150,7 +156,7 @@ module.exports = function (app: any) {
           startAlarmMonitoring();
         }
 
-        function getAvailableAlarmPaths(app: any, ignorePaths: string[]): string[] {
+        function getAvailableAlarmPaths(app: any, ignorePaths: string[] | undefined = []): string[] {
           let retval: string[] = app.streambundle.getAvailablePaths()
             .filter((p: string) => (!(ignorePaths.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
             .filter((p: string) => { var meta: any = app.getSelfPath(`${p}.meta`); return((meta) && (meta.zones) && (meta.zones.length > 0)); }); 
@@ -186,8 +192,8 @@ module.exports = function (app: any) {
                 }
               }
               if (updated === true) {
-                delta.addValue(options.digestPath, notificationDigest).commit().clear();
-                (options.outputs || []).forEach((output: Output) => {
+                delta.addValue(app.options.digestPath, notificationDigest).commit().clear();
+                (app.options.outputs || []).forEach((output: Output) => {
                   let activeDigestStates = Object.keys(notificationDigest)
                     .filter(key => !notificationDigest[key].actions.includes(output.name)) // discard suppressed notifications
                     .map(key => (notificationDigest[key].state));             // isolate the notification's state
@@ -346,4 +352,11 @@ interface Output {
   triggerStates: string[],
   suppressionPath?: string,
   lastUpdateState?: number
+}
+
+interface Schema {
+  ignorePaths: string[],
+  digestPath: string,
+  keyChangeNotificationPath: string,
+  outputs: Output[]
 }
