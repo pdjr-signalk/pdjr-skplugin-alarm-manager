@@ -2,7 +2,8 @@
   "name": "pdjr-skplugin-alarm-manager",
   "version": "2.2.0",
   "description": "Issue notification and other outputs in response to Signal K alarm conditions",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "signalk-plugin-enabled-by-default": true,
   "scripts": {
     "format": "prettier-standard 'index.js'",
@@ -10,7 +11,7 @@
     "test": "mocha",
     "prepublishOnly": "npm run clean && npm run build",
     "dev": "webpack --watch --mode development",
-    "build": "webpack --mode production",
+    "build": "tsc && webpack --mode production",
     "clean": "rimraf ./public",
     "bundle-analyzer": "webpack-bundle-analyzer --port 4200 public/stats.json"
   },
@@ -29,34 +30,25 @@
     "url": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager/issues"
   },
   "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme",
-  "dependencies": {
-    "signalk-libapp": "github:pdjr-signalk/signalk-libapp",
-    "signalk-libdelta": "github:pdjr-signalk/signalk-libdelta",
-    "signalk-liblog": "github:pdjr-signalk/signalk-liblog",
-    "signalk-libnotification": "github:pdjr-signalk/signalk-libnotification"
-  },
   "directories": {
-  },
-  "peerDependencies": {
-    "react": "^16.14.0",
-    "react-dom": "^16.14.0"
+    "resources": "./directories"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.15.4",
-    "babel-loader": "^9.1.3",
+    "@types/node": "^22.7.2",
     "bootstrap": "^4.6.2",
     "font-awesome": "^4.7.0",
     "react": "^16.14.0",
-    "react-collapsible": "^2.10.0",
     "react-dom": "^16.14.0",
-    "react-hook-form": "^7.45.4",
     "react-redux": "^5.1.2",
     "react-select": "^3.2.0",
     "reactstrap": "^5.0.0",
     "redux": "^3.7.2",
     "redux-thunk": "^2.3.0",
     "simple-line-icons": "^2.5.5",
-    "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4"
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "signalk-libdelta": "github:pdjr-signalk/signalk-libdelta"
   }
 }
