@@ -17,7 +17,6 @@
   },
   "keywords": [
     "signalk-node-server-plugin",
-    "signalk-plugin-configurator",
     "signalk-category-utility"
   ],
   "author": "Paul Reeve <preeve@pdjr.eu>",
@@ -26,14 +25,11 @@
     "url": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager/issues"
   },
   "homepage": "https://github.com/pdjr-signalk/pdjr-skplugin-alarm-manager#readme",
-  "directories": {
-    "resources": "./directories"
+  "dependencies": {
+    "signalk-libdelta": "github:pdjr-signalk/signalk-libdelta"
   },
   "devDependencies": {
     "@types/node": "^22.7.2",
-    "typescript": "^5.6.2"
-  },
-  "dependencies": {
-    "signalk-libdelta": "github:pdjr-signalk/signalk-libdelta"
+    "typescript": "^5.7.2"
   }
 }
