@@ -117,15 +117,15 @@
         }
       }
     },
-    "/outputs/{outputName}": {
+    "/output/{output}": {
       "get": {
         "description": "Get the current state of the output specified by {name}.\n",
         "parameters": [
           {
-            "outputName": null,
-            "name": "outputName",
+            "output": null,
+            "name": "output",
             "in": "path",
-            "description": "Identifier of the output channel whose state is required.\n",
+            "description": "Name of the output channel whose state is required.\n",
             "required": true,
             "schema": {
               "type": "string"
@@ -146,7 +146,7 @@
             }
           },
           "404": {
-            "description": "Error.\nThe request was invalid (bad or missing output {name}).\n"
+            "description": "Error.\nThe request was invalid (bad or missing output channel name).\n"
           },
           "500": {
             "description": "Error.\nThe server was unable to service the request.\n"
@@ -154,13 +154,13 @@
         }
       }
     },
-    "/suppress/{outputName}": {
+    "/suppress/{output}": {
       "patch": {
         "description": "Suppress output on output channel {name}.\n",
         "parameters": [
           {
-            "outputName": null,
-            "name": "outputName",
+            "output": null,
+            "name": "output",
             "in": "path",
             "description": "Identifier of the output channel which should be suppressed.\n",
             "required": true,
@@ -171,10 +171,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Success.\nOutput channel {name} has been suppressed.\n"
+            "description": "Success.\nOutput channel has been suppressed.\n"
           },
           "404": {
-            "description": "Error.\nThe request was invalid (bad or missing output {name}).\n"
+            "description": "Error.\nThe request was invalid (bad or missing output channel name).\n"
           },
           "500": {
             "description": "Error.\nThe server was unable to service the request.\n"

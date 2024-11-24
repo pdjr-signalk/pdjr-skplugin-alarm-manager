@@ -102,16 +102,16 @@ paths:
           description: |
             Error.
             The server was unable to service the request.
-  /outputs/{outputName}:
+  /output/{output}:
     get:
       description: |
         Get the current state of the output specified by {name}.
       parameters:
-      - outputName:
-        name: outputName
+      - output:
+        name: output
         in: path
         description: |
-          Identifier of the output channel whose state is required.
+          Name of the output channel whose state is required.
         required: true
         schema:
           type: string
@@ -130,18 +130,18 @@ paths:
         404:
           description: |
             Error.
-            The request was invalid (bad or missing output {name}).
+            The request was invalid (bad or missing output channel name).
         500:
           description: |
             Error.
             The server was unable to service the request.
-  /suppress/{outputName}:
+  /suppress/{output}:
     patch:
       description: |
         Suppress output on output channel {name}.
       parameters:
-      - outputName:
-        name: outputName
+      - output:
+        name: output
         in: path
         description: |
           Identifier of the output channel which should be suppressed.
@@ -152,11 +152,11 @@ paths:
         200:
           description: |
             Success.
-            Output channel {name} has been suppressed.
+            Output channel has been suppressed.
         404:
           description: |
             Error.
-            The request was invalid (bad or missing output {name}).
+            The request was invalid (bad or missing output channel name).
         500:
           description: |
             Error.
