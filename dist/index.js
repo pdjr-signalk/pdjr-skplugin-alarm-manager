@@ -305,7 +305,7 @@ module.exports = function (app) {
                 case '/output':
                     var output = options.outputs.reduce((a, o) => ((o.name == req.params.name) ? o : a), undefined);
                     if (output) {
-                        expressSend(res, 200, new Number(output.lastUpdateState), req.path);
+                        expressSend(res, 200, new Number(output.lastUpdateState || -1), req.path);
                     }
                     else {
                         expressSend(res, 404, "404: invalid request", req.path);

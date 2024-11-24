@@ -120,12 +120,14 @@ paths:
           description: |
             Success.
             The response body contains the value 1 to indicate that
-            the output is ON, or 0 to indicate that the output is OFF.
+            the output is ON, or 0 to indicate that the output is OFF,
+            or -1 to indicate that the output state is undefined (i.e.
+            has not yet been set).
           content:
             application/json:
               schema:
                 type: number
-                minimum: 0
+                minimum: -1
                 maximum: 1
         404:
           description: |

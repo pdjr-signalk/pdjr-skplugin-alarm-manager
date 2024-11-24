@@ -134,12 +134,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Success.\nThe response body contains the value 1 to indicate that\nthe output is ON, or 0 to indicate that the output is OFF.\n",
+            "description": "Success.\nThe response body contains the value 1 to indicate that\nthe output is ON, or 0 to indicate that the output is OFF,\nor -1 to indicate that the output state is undefined (i.e.\nhas not yet been set).\n",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "number",
-                  "minimum": 0,
+                  "minimum": -1,
                   "maximum": 1
                 }
               }
