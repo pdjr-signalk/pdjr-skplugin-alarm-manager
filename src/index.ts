@@ -105,25 +105,31 @@ module.exports = function (app: any) {
       options = canonicaliseOptions(props)
       app.debug(`using configuration: ${JSON.stringify(options, null, 2)}`)
 
-      // Subscribe to any suppression paths configured for the output
-      // channels and persist these across the lifetime of the plugin.
-      options.outputs.forEach((output: Output) => {
-        if (output.suppressionPath) {
-          let stream: any = app.streambundle.getSelfStream(output.suppressionPath)
-          resistantUnsubscribes.push(stream.skipDuplicates().onValue((v: number) => {
-            if (v == 1) {
-              app.debug(`suppressing output channel '${output.name}'`)
-              Object.keys(notificationDigest).forEach(key => {
-                if (!notificationDigest[key].actions.includes(output.name)) notificationDigest[key].actions.push(output.name)
-              })     
-            }
-          }))
-        }
-      })
+      if (options.outputs.length) {
+        app.setPluginStatus(`Started: operating output channels ${options.outputs.map((o) => (`'${o.name}'`)).join(', ')}`);
+
+        // Subscribe to any suppression paths configured for the output
+        // channels and persist these across the lifetime of the plugin.
+        options.outputs.forEach((output: Output) => {
+          if (output.suppressionPath) {
+            let stream: any = app.streambundle.getSelfStream(output.suppressionPath)
+            resistantUnsubscribes.push(stream.skipDuplicates().onValue((v: number) => {
+              if (v == 1) {
+                app.debug(`suppressing output channel '${output.name}'`)
+                Object.keys(notificationDigest).forEach(key => {
+                  if (!notificationDigest[key].actions.includes(output.name)) notificationDigest[key].actions.push(output.name)
+                })     
+              }
+            }))
+          }
+        })
     
-      // Repeatedly check the available key set for those that are
-      // configured for alarm use.
-      intervalId = setInterval(() => { startAlarmMonitoringMaybe() }, (PATH_CHECK_INTERVAL * 1000));
+        // Repeatedly check the available key set for those that are
+        // configured for alarm use.
+        intervalId = setInterval(() => { startAlarmMonitoringMaybe() }, (PATH_CHECK_INTERVAL * 1000));
+      } else {
+        app.setPluginStatus('Stopped: there are no output channels');
+      }
     },
 
     stop: function() {
