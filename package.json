@@ -6,14 +6,10 @@
   "types": "dist/index.d.ts",
   "signalk-plugin-enabled-by-default": true,
   "scripts": {
-    "format": "prettier-standard 'index.js'",
-    "publish": "yq -o=json -I=2 resources/openApi.yaml > resources/openApi.json",
-    "test": "mocha",
-    "prepublishOnly": "npm run clean && npm run build",
-    "dev": "webpack --watch --mode development",
-    "build": "tsc && webpack --mode production",
-    "clean": "rimraf ./public",
-    "bundle-analyzer": "webpack-bundle-analyzer --port 4200 public/stats.json"
+    "clean": "rm -rf node_modules package-lock.json *.tgz",
+    "make": "yq -o=json -I=2 src/openApi.yaml > dist/openApi.json && npm install && tsc",
+    "pack": "npm pack",
+    "webpack": "webpack --mode production"
   },
   "repository": {
     "type": "git",
@@ -34,18 +30,7 @@
     "resources": "./directories"
   },
   "devDependencies": {
-    "@fortawesome/fontawesome-free": "^5.15.4",
     "@types/node": "^22.7.2",
-    "bootstrap": "^4.6.2",
-    "font-awesome": "^4.7.0",
-    "react": "^16.14.0",
-    "react-dom": "^16.14.0",
-    "react-redux": "^5.1.2",
-    "react-select": "^3.2.0",
-    "reactstrap": "^5.0.0",
-    "redux": "^3.7.2",
-    "redux-thunk": "^2.3.0",
-    "simple-line-icons": "^2.5.5",
     "typescript": "^5.6.2"
   },
   "dependencies": {
