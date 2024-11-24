@@ -135,7 +135,7 @@ module.exports = function (app) {
             router.patch('/suppress/:name', handleRoutes);
         },
         getOpenApi: function () {
-            return (require("./resources/openApi.json"));
+            return (require("./openApi.json"));
         }
     };
     function canonicaliseOptions(options) {
