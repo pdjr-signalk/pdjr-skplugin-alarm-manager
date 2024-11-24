@@ -135,11 +135,11 @@ module.exports = function (app: any) {
     },
 
     registerWithRouter: function(router: any) {
-      router.get('/keys/', handleRoutes);
-      router.get('/digest/', handleRoutes);
-      router.get('/outputs/', handleRoutes);
-      router.get('/output/:name/', handleRoutes);
-      router.patch('/suppress/:name/', handleRoutes);
+      router.get('/keys', handleRoutes);
+      router.get('/digest', handleRoutes);
+      router.get('/outputs', handleRoutes);
+      router.get('/output/:name', handleRoutes);
+      router.patch('/suppress/:name', handleRoutes);
     },
   
     getOpenApi: function() {
