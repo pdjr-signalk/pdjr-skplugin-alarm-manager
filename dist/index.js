@@ -290,6 +290,7 @@ module.exports = function (app) {
     }
     function handleRoutes(req, res) {
         app.debug(`processing ${req.method} request on '${req.path}'`);
+        app.debug(JSON.stringify(req.params));
         try {
             switch (req.path.slice(0, (req.path.indexOf('/', 1) == -1) ? undefined : req.path.indexOf('/', 1))) {
                 case '/keys':
