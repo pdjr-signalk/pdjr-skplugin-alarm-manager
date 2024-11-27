@@ -150,7 +150,8 @@ module.exports = function (app: any) {
   }
 
   function createPluginConfiguration(options: any): PluginConfiguration {
-    let retval: PluginConfiguration = {
+    app.debug(`createPluginConfiguration(${options})`);
+    var retval: PluginConfiguration = {
       ignorePaths: options.ignorePaths || DEFAULT_IGNORE_PATHS,
       digestPath: options.digestPath || DEFAULT_DIGEST_PATH,
       keyChangeNotificationPath: options.keyChangeNotificationPath || DEFAULT_KEY_CHANGE_NOTIFICATION_PATH,

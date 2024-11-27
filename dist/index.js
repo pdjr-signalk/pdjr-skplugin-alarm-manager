@@ -134,7 +134,8 @@ module.exports = function (app) {
         }
     };
     function createPluginConfiguration(options) {
-        let retval = {
+        app.debug(`createPluginConfiguration(${options})`);
+        var retval = {
             ignorePaths: options.ignorePaths || DEFAULT_IGNORE_PATHS,
             digestPath: options.digestPath || DEFAULT_DIGEST_PATH,
             keyChangeNotificationPath: options.keyChangeNotificationPath || DEFAULT_KEY_CHANGE_NOTIFICATION_PATH,
