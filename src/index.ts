@@ -171,7 +171,7 @@ module.exports = function (app: any) {
         suppressionPath: outputOption.suppressionPath,
         lastUpdateState: -1,
       };
-      pluginConfiguration.outputs.push(output);
+      retval.outputs.push(output);
     });
     return(retval);
 
