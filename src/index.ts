@@ -150,7 +150,7 @@ module.exports = function (app: any) {
   }
 
   function createPluginConfiguration(options: any): PluginConfiguration {
-    app.debug(`createPluginConfiguration(${options})`);
+    app.debug(`createPluginConfiguration(${JSON.stringify(options, null, 2)})`);
     var retval: PluginConfiguration = {
       ignorePaths: options.ignorePaths || DEFAULT_IGNORE_PATHS,
       digestPath: options.digestPath || DEFAULT_DIGEST_PATH,
@@ -178,6 +178,7 @@ module.exports = function (app: any) {
   }
 
   function openSuppressionPaths(pluginConfiguration: PluginConfiguration): (() => void)[] {
+    app.debug(`openSuppressionPaths(${JSON.stringify(pluginConfiguration, null, 2)})`);
     var retval: (() => void)[] = [];
     pluginConfiguration.outputs?.forEach((output: Output) => {
       let stream: any = app.streambundle.getSelfStream(output.suppressionPath);
