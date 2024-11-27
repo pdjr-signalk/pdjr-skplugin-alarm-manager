@@ -16,12 +16,17 @@
 
 import { Delta } from 'signalk-libdelta'
 
-const ALARM_STATES: string[] = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ]
-const PATH_CHECK_INTERVAL: number = 20
+const PLUGIN_ID: string = 'alarm-manager';
+const PLUGIN_NAME: string = 'pdjr-skplugin-alarm-manager';
+const PLUGIN_DESCRIPTION: string = 'Issue notification and other outputs in response to Signal K alarm conditions.';
 
-const PLUGIN_ID: string = 'alarm-manager'
-const PLUGIN_NAME: string = 'pdjr-skplugin-alarm-manager'
-const PLUGIN_DESCRIPTION: string = 'Issue notification and other outputs in response to Signal K alarm conditions.'
+const DEFAULT_IGNORE_PATHS: string[] = [ "design.", "electrical.", "environment.", "network.", "notifications.", "plugins.", "sensors." ];
+const DEFAULT_DIGEST_PATH: string = `plugins.${PLUGIN_ID}.digest`;
+const DEFAULT_KEY_CHANGE_NOTIFICATION_PATH: string = `notifications.plugins.${PLUGIN_ID}.keyChange`;
+
+const ALARM_STATES: string[] = [ "nominal", "normal", "alert", "warn", "alarm", "emergency" ];
+const STATE_SCAN_INTERVAL: number = 20;
+
 const PLUGIN_SCHEMA: any = {
   "type": "object",
   "properties": {
@@ -30,19 +35,19 @@ const PLUGIN_SCHEMA: any = {
       "description": "Paths or path prefixes that should be ignored by the alarm manager",
       "type": "array",
       "items": { "type": "string" },
-      "default": [ "design.", "electrical.", "environment.", "network.", "notifications.", "plugins.", "sensors." ]
+      "default": DEFAULT_IGNORE_PATHS
     },
     "digestPath": {
       "title": "Digest path",
       "description": "Signal K key that will hold the alarm notification digest",
       "type": "string",
-      "default": "plugins.alarm-manager.digest"
+      "default": DEFAULT_DIGEST_PATH
     },
     "keyChangeNotificationPath": {
       "title": "Key change notification path",
       "description": "Issue notification here when key collection changes",
       "type": "string",
-      "default": "notifications.plugins.alarm-manager.keyChange"
+      "default": DEFAULT_KEY_CHANGE_NOTIFICATION_PATH
     },
     "outputs": {
       "title": "Output channels",
@@ -76,21 +81,19 @@ const PLUGIN_SCHEMA: any = {
             "type": "string"
           }
         },
-        "required" : [ "name", "path", "triggerStates" ],
-        "default": { triggerStates: ALARM_STATES }
+        "required" : [ "name", "path", "triggerStates" ]
       }
     }
   }
-}
-const PLUGIN_UISCHEMA: any = {}
+};
+const PLUGIN_UISCHEMA: any = {};
 
 module.exports = function (app: any) {
-  let alarmPaths: string[] = []
-  let intervalId: NodeJS.Timeout | undefined = undefined
-  let notificationDigest: any = {}
-  let options: PluginOptions
-  let resistantUnsubscribes: (() => void)[] = []
-  let unsubscribes: (() => void)[] = []
+  var suppressionPathUnsubscribes: (() => void)[] = [];
+  var unsubscribes: (() => void)[] = [];
+  var stateScanInterval: NodeJS.Timeout | undefined = undefined;
+
+  var pluginConfiguration: PluginConfiguration = <PluginConfiguration>{};
 
   let plugin: SKPlugin = {
     id: PLUGIN_ID,
@@ -99,45 +102,38 @@ module.exports = function (app: any) {
     schema: PLUGIN_SCHEMA,
     uiSchema: PLUGIN_UISCHEMA,
   
-    start: function(props: any) {
-      let delta = new Delta(app, plugin.id)
+    start: function(options: any) {
+      let delta = new Delta(app, plugin.id);
 
-      options = canonicaliseOptions(props)
-      app.debug(`using configuration: ${JSON.stringify(options, null, 2)}`)
+      try {
+        pluginConfiguration = createPluginConfiguration(options);
+        app.debug(`using configuration: ${JSON.stringify(pluginConfiguration, null, 2)}`)
 
-      if (options.outputs.length) {
-        app.setPluginStatus(`Started: operating output channels ${options.outputs.map((o) => (`'${o.name}'`)).join(', ')}`);
+        if ((pluginConfiguration.outputs) && (pluginConfiguration.outputs.length)) {
+          app.setPluginStatus(`Started: operating output channels ${pluginConfiguration.outputs.map((o) => (`'${o.name}'`)).join(', ')}`);
+          
+          suppressionPathUnsubscribes = openSuppressionPaths(pluginConfiguration);
 
-        // Subscribe to any suppression paths configured for the output
-        // channels and persist these across the lifetime of the plugin.
-        options.outputs.forEach((output: Output) => {
-          if (output.suppressionPath) {
-            let stream: any = app.streambundle.getSelfStream(output.suppressionPath)
-            resistantUnsubscribes.push(stream.skipDuplicates().onValue((v: number) => {
-              if (v == 1) {
-                app.debug(`suppressing output channel '${output.name}'`)
-                Object.keys(notificationDigest).forEach(key => {
-                  if (!notificationDigest[key].actions.includes(output.name)) notificationDigest[key].actions.push(output.name)
-                })     
-              }
-            }))
-          }
-        })
-    
-        // Repeatedly check the available key set for those that are
-        // configured for alarm use.
-        intervalId = setInterval(() => { startAlarmMonitoringMaybe() }, (PATH_CHECK_INTERVAL * 1000));
-      } else {
-        app.setPluginStatus('Stopped: there are no output channels');
+          stateScanInterval = setInterval(() => { startAlarmMonitoringMaybe(pluginConfiguration) }, (STATE_SCAN_INTERVAL * 1000));
+
+        } else {
+          app.setPluginStatus('Stopped: no output channels are configured');
+        }
+      } catch(e: any) {
+        app.setPluginStatus('Stopped: bad or missing configuration');
+        app.setPluginError(e.message);
       }
     },
 
     stop: function() {
-      if (intervalId) clearInterval(intervalId);
+      suppressionPathUnsubscribes.forEach((f) => f());
+      suppressionPathUnsubscribes = [];
+
+      clearInterval(stateScanInterval);
+      stateScanInterval = undefined;
+
 	    unsubscribes.forEach(f => f());
       unsubscribes = [];
-	    resistantUnsubscribes.forEach(f => f());
-      resistantUnsubscribes = [];
     },
 
     registerWithRouter: function(router: any) {
@@ -153,47 +149,72 @@ module.exports = function (app: any) {
     }
   }
 
-  function canonicaliseOptions(options: any): PluginOptions {
-    let retval: PluginOptions = {
-      ignorePaths: options.ignorePaths || plugin.schema.properties.ignorePaths.default,
-      digestPath: options.digestPath || plugin.schema.properties.digestPath.default,
-      keyChangeNotificationPath: options.keyChangeNotificationPath || plugin.schema.properties.keyChangeNotificationPath.default,
-      outputs: []
+  function createPluginConfiguration(options: any): PluginConfiguration {
+    let retval: PluginConfiguration = {
+      ignorePaths: options.ignorePaths || DEFAULT_IGNORE_PATHS,
+      digestPath: options.digestPath || DEFAULT_DIGEST_PATH,
+      keyChangeNotificationPath: options.keyChangeNotificationPath || DEFAULT_KEY_CHANGE_NOTIFICATION_PATH,
+      outputs: [],
+
+      notificationDigest: [],
+      alarmPaths: []
     };
-    retval.outputs = (options.outputs || []).reduce((a: Output[], output: Output) => {
-      try {
-        let validOutput: Output = { ...plugin.schema.properties.outputs.items.default, ...output };
-        if (!validOutput.name) throw new Error("missing 'name' property");
-        if (!validOutput.path) throw new Error("missing 'path' property");
-        if (!validOutput.triggerStates.reduce((a,v) => (a && plugin.schema.properties.outputs.items.properties.triggerStates.items.enum.includes(v)), true)) throw new Error("invalid 'triggerStates' property");
-        a.push(validOutput);
-      } catch(e: any) { app.debug(`dropping invalid output channel '(${e.message})`); }
-      return(a);
-    }, [])
-    return(retval)
+    options.outputs.forEach((outputOption: any) => {
+      if (!outputOption.name) throw new Error('missing \'name\' property');
+      if (!outputOption.path) throw new Error('missing \'path\' property');
+      if (!outputOption.triggerStates.reduce((a: boolean, v: string) => (a && ALARM_STATES.includes(v)), true)) throw new Error('invalid \'triggerStates\' property');
+      var output: Output = {
+        name: outputOption.name,
+        path: outputOption.path,
+        triggerStates: outputOption.triggerStates,
+        suppressionPath: outputOption.suppressionPath,
+        lastUpdateState: -1,
+      };
+      pluginConfiguration.outputs.push(output);
+    });
+    return(retval);
+
   }
 
-  function startAlarmMonitoringMaybe() {
-    let availableAlarmPaths = getAvailableAlarmPaths(app, options.ignorePaths);
-    if (!compareAlarmPaths(alarmPaths, availableAlarmPaths)) {
-      app.setPluginStatus(`Started: monitoring ${availableAlarmPaths.length} alarm path${(availableAlarmPaths.length == 1)?'':'s'}`);
-      alarmPaths = availableAlarmPaths;
+  function openSuppressionPaths(pluginConfiguration: PluginConfiguration): (() => void)[] {
+    var retval: (() => void)[] = [];
+    pluginConfiguration.outputs?.forEach((output: Output) => {
+      let stream: any = app.streambundle.getSelfStream(output.suppressionPath);
+      retval.push(stream.skipDuplicates().onValue((v: number) => {
+        if (v == 1) {
+          app.debug(`suppressing output channel '${name}'`);
+          Object.keys(pluginConfiguration.notificationDigest).forEach(key => {
+            if (!pluginConfiguration.notificationDigest[key].actions.includes(name)) pluginConfiguration.notificationDigest[key].actions.push(name);
+          });     
+        }
+      }));
+    });
+    return(retval);
+  }
+
+  function startAlarmMonitoringMaybe(pluginConfiguration: PluginConfiguration) {
+    let availableAlarmPaths = getAvailableAlarmPaths(pluginConfiguration.ignorePaths || []);
+
+    if (!compareAlarmPaths(pluginConfiguration.alarmPaths, availableAlarmPaths)) {
+      app.debug(`now monitoring ${availableAlarmPaths.length} alarm path${(availableAlarmPaths.length == 1)?'':'s'}`);
+      pluginConfiguration.alarmPaths = availableAlarmPaths;
       if (unsubscribes.length > 0) {
-        unsubscribes.forEach(f => f()); unsubscribes = [];
+        unsubscribes.forEach(f => f());
+        unsubscribes = [];
       }
-      if (options.keyChangeNotificationPath) {
-        (new Delta(app, plugin.id)).addValue(options.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }).commit().clear()
+      if (pluginConfiguration.keyChangeNotificationPath) {
+        (new Delta(app, plugin.id)).addValue(pluginConfiguration.keyChangeNotificationPath, { state: "alert", method: [], message: "Monitored key collection has changed" }).commit().clear();
       }
-      startAlarmMonitoring();
+      startAlarmMonitoring(pluginConfiguration);
     }
 
-    function getAvailableAlarmPaths(app: any, ignorePaths: string[] | undefined = []): string[] {
+    function getAvailableAlarmPaths(ignorePaths: string[]) {
       let retval: string[] = app.streambundle.getAvailablePaths()
         .filter((p: string) => (!(ignorePaths.reduce((a,ip) => { return(p.startsWith(ip)?true:a); }, false))))
         .filter((p: string) => { var meta: any = app.getSelfPath(`${p}.meta`); return((meta) && (meta.zones) && (meta.zones.length > 0)); }); 
       return(retval.sort());
     }
-    
+
     function compareAlarmPaths(a: string[], b: string[]): boolean {
       var retval = false;
       if (a.length !== b.length) return(false);
@@ -201,35 +222,35 @@ module.exports = function (app: any) {
       return(true);
     }
 
-    function startAlarmMonitoring() {
-      var delta = new Delta(app, plugin.id)
+    function startAlarmMonitoring(pluginConfiguration: PluginConfiguration) {
+      var delta = new Delta(app, plugin.id);
 
-      alarmPaths.forEach(path => {
+      pluginConfiguration.alarmPaths.forEach((path: string) => {
         const zones = (app.getSelfPath(`${path}.meta`)).zones.sort((a: any, b: any) => (ALARM_STATES.indexOf(a.state) - ALARM_STATES.indexOf(b.state)));
         unsubscribes.push(app.streambundle.getSelfStream(path).skipDuplicates().map((v: any) => getZoneContainingValue(zones, v)).skipDuplicates((ov: any, nv: any) => (((ov)?ov.state:null) == ((nv)?nv.state:null))).onValue((activeZone: any) => {
           var updated = false;
           if (activeZone) {
-            if ((!notificationDigest[path]) || (notificationDigest[path].state != activeZone.state)) {
+            if ((!pluginConfiguration.notificationDigest[path]) || (pluginConfiguration.notificationDigest[path].state != activeZone.state)) {
               app.debug(`issuing '${activeZone.state}' notification on '${path}'`);
-              const notification: any = { state: activeZone.state, method: activeZone.method, message: activeZone.message }
-              notificationDigest[path] = notification;
+              const notification: any = { state: activeZone.state, method: activeZone.method, message: activeZone.message };
+              pluginConfiguration.notificationDigest[path] = notification;
               delta.addValue(path, notification).commit().clear();
               updated = true;
             }
           } else {
             app.debug(`cancelling notification on '${path}'`);
-            if (notificationDigest[path]) {
-              delete notificationDigest[path];
+            if (pluginConfiguration.notificationDigest[path]) {
+              delete pluginConfiguration.notificationDigest[path];
               delta.addValue(path, null).commit().clear();
               updated = true;
             }
           }
           if (updated === true) {
-            delta.addValue(app.options.digestPath, notificationDigest).commit().clear();
-            (app.options.outputs || []).forEach((output: Output) => {
-              let activeDigestStates = Object.keys(notificationDigest)
-                .filter(key => !notificationDigest[key].actions.includes(output.name)) // discard suppressed notifications
-                .map(key => (notificationDigest[key].state));             // isolate the notification's state
+            delta.addValue(app.options.digestPath, pluginConfiguration.notificationDigest).commit().clear();
+            pluginConfiguration.outputs.forEach((output: Output) => {
+              let activeDigestStates = Object.keys(pluginConfiguration.notificationDigest)
+                .filter(key => !pluginConfiguration.notificationDigest[key].actions.includes(output.name)) // discard suppressed notifications
+                .map(key => (pluginConfiguration.notificationDigest[key].state));             // isolate the notification's state
               updateOutput(output, (output.triggerStates.reduce((a,state) => (activeDigestStates.includes(state) || a), false))?1:0, path);
             });
           }
@@ -299,16 +320,16 @@ module.exports = function (app: any) {
     try {
       switch (req.path.slice(0, (req.path.indexOf('/', 1) == -1)?undefined:req.path.indexOf('/', 1))) {
         case '/keys':
-          expressSend(res, 200, alarmPaths, req.path);
+          expressSend(res, 200, pluginConfiguration.alarmPaths, req.path);
           break;
         case '/digest':
-          expressSend(res, 200, notificationDigest, req.path);
+          expressSend(res, 200, pluginConfiguration.notificationDigest, req.path);
           break;
         case '/outputs':
-          expressSend(res, 200, options.outputs.reduce((a: { [id: string]: number }, v: Output) => { a[v.name] = Number(v.lastUpdateState); return(a); }, {}), req.path);
+          expressSend(res, 200, pluginConfiguration.outputs.reduce((a: { [id: string]: number }, v: Output) => { a[v.name] = Number(v.lastUpdateState); return(a); }, {}), req.path);
           break;
         case '/output':
-          var output: Output | undefined = options.outputs.reduce((a: Output | undefined, o: Output) => ((o.name == req.params.name)?o:a), undefined);
+          var output: Output | undefined = pluginConfiguration.outputs.reduce((a: Output | undefined, o: Output) => ((o.name == req.params.name)?o:a), undefined);
           if (output) {
             expressSend(res, 200, new Number(output.lastUpdateState || -1), req.path);
           } else {
@@ -316,9 +337,9 @@ module.exports = function (app: any) {
           }
           break;
         case '/suppress':
-          if (options.outputs.map((output: Output) => output.name).includes(req.params.name)) {
-            Object.keys(notificationDigest).forEach(key => {
-              if (!notificationDigest[key].suppressedOutputs.includes(req.params.name)) notificationDigest[key].suppressedOutputs.push(req.params.name);
+          if (pluginConfiguration.outputs.map((output: Output) => output.name).includes(req.params.name)) {
+            Object.keys(pluginConfiguration.notificationDigest).forEach(key => {
+              if (!pluginConfiguration.notificationDigest[key].suppressedOutputs.includes(req.params.name)) pluginConfiguration.notificationDigest[key].suppressedOutputs.push(req.params.name);
             });
             expressSend(res, 200, null, req.path);
           } else {
@@ -360,12 +381,15 @@ interface Output {
   path: string,
   triggerStates: string[],
   suppressionPath?: string,
-  lastUpdateState?: number
+  lastUpdateState?: number,
 }
 
-interface PluginOptions {
+interface PluginConfiguration {
   ignorePaths: string[],
   digestPath: string,
   keyChangeNotificationPath: string,
-  outputs: Output[]
+  outputs: Output[],
+
+  notificationDigest: { [index: string]: any }
+  alarmPaths: string[]
 }
